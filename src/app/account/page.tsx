@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import {
   Bell,
   Heart,
-  LayoutDashboard,
   MapPin,
   Package,
   Settings,
@@ -13,20 +12,27 @@ import {
 import { getProfile } from "@/lib/auth/get-profile";
 import LogoutButton from "@/components/auth/LogoutButton";
 
-export default async function AccountPage() {
-  const profile = await getProfile();
+type AccountProfile = {
+  full_name: string | null;
+  email: string | null;
+  role: string | null;
+  phone: string | null;
+};
 
-  // Redirect guests to login before showing the account dashboard.
-  if (!profile) {
+export default async function AccountPage() {
+  const profileData = await getProfile();
+
+  if (!profileData) {
     redirect("/login");
   }
+
+  const profile = profileData as AccountProfile;
 
   const isAdmin = profile.role === "admin";
   const isSeller = profile.role === "seller";
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
-      {/* Top welcome panel */}
       <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -58,9 +64,7 @@ export default async function AccountPage() {
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-        {/* Left side */}
         <div className="space-y-6">
-          {/* Basic profile cards */}
           <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-600 dark:text-red-400">
@@ -95,7 +99,7 @@ export default async function AccountPage() {
                   Role
                 </p>
                 <p className="mt-2 text-base font-semibold capitalize text-zinc-900 dark:text-white">
-                  {profile.role}
+                  {profile.role || "user"}
                 </p>
               </div>
 
@@ -110,7 +114,6 @@ export default async function AccountPage() {
             </div>
           </div>
 
-          {/* Quick access links */}
           <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-600 dark:text-red-400">
@@ -185,9 +188,7 @@ export default async function AccountPage() {
           </div>
         </div>
 
-        {/* Right side */}
         <div className="space-y-6">
-          {/* Dashboard access cards */}
           <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-600 dark:text-red-400">
@@ -263,7 +264,6 @@ export default async function AccountPage() {
             </div>
           </div>
 
-          {/* Account overview card */}
           <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
             <div className="flex items-start gap-4">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-50 text-lg font-bold text-red-600 dark:bg-red-950/30 dark:text-red-400">
@@ -281,7 +281,7 @@ export default async function AccountPage() {
                 </p>
                 <div className="mt-3">
                   <span className="inline-flex rounded-full bg-red-50 px-3 py-1 text-xs font-semibold capitalize text-red-600 dark:bg-red-950/30 dark:text-red-400">
-                    {profile.role}
+                    {profile.role || "user"}
                   </span>
                 </div>
               </div>
