@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Scale, X } from "lucide-react";
-import { useCompareStore } from "@/store/compare-store";
+import { useCompareStore } from "@/stores/compare-store";
 
 export default function ComparePageView() {
   const { items, removeItem, clear } = useCompareStore();
