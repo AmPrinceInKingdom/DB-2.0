@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 type Context = {
@@ -7,7 +7,7 @@ type Context = {
   }>;
 };
 
-export async function GET(request: Request, { params }: Context) {
+export async function GET(request: NextRequest, { params }: Context) {
   const { id } = await params;
   const supabase = await createClient();
 
