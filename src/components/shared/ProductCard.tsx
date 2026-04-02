@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Heart, Scale, ShoppingCart, Star } from "lucide-react";
 import { useState } from "react";
-import { useCompareStore } from "@/store/compare-store";
+import { useCompareStore } from "@/stores/compare-store";
 
 type ProductCardProps = {
   // Basic product identity
