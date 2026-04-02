@@ -1,28 +1,36 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+type Context = {
+  params: Promise<{
+    id: string;
+  }>;
+};
+
+export async function GET(request: NextRequest, { params }: Context) {
+  const { id } = await params;
   const supabase = await createClient();
 
-  const { data: proof } = await supabase
+  const { data: proof, error: proofError } = await supabase
     .from("payment_proofs")
     .select("*")
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
 
-  if (!proof) {
+  if (proofError || !proof) {
     return NextResponse.redirect(new URL("/admin/payments", request.url));
   }
 
-  await supabase
+  const { error: proofUpdateError } = await supabase
     .from("payment_proofs")
     .update({
       verification_status: "rejected",
     })
     .eq("id", proof.id);
+
+  if (proofUpdateError) {
+    return NextResponse.redirect(new URL("/admin/payments", request.url));
+  }
 
   await supabase
     .from("orders")
