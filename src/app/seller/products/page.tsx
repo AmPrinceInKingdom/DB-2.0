@@ -8,16 +8,36 @@ type Props = {
   }>;
 };
 
+type ProfileRow = {
+  role?: string | null;
+};
+
+type SellerProductRow = {
+  id: string;
+  name?: string | null;
+  slug?: string | null;
+  sku?: string | null;
+  thumbnail_url?: string | null;
+  status?: string | null;
+  is_featured?: boolean | null;
+  stock_quantity?: number | null;
+  price?: number | null;
+  compare_at_price?: number | null;
+  created_at?: string | null;
+  categories?: {
+    id?: string | null;
+    name?: string | null;
+  } | null;
+};
+
 export default async function SellerProductsPage({ searchParams }: Props) {
   const { search = "" } = await searchParams;
   const supabase = await createClient();
 
-  // Load the authenticated user.
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Stop here if the user is not logged in.
   if (!user) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-10">
@@ -28,14 +48,15 @@ export default async function SellerProductsPage({ searchParams }: Props) {
     );
   }
 
-  // Confirm seller access.
   const { data: profile } = await supabase
-    .from("profiles")
+    .from("profiles" as never)
     .select("role")
     .eq("id", user.id)
     .single();
 
-  if (!profile || profile.role !== "seller") {
+  const profileRow = profile as ProfileRow | null;
+
+  if (!profileRow || profileRow.role !== "seller") {
     return (
       <div className="mx-auto max-w-7xl px-4 py-10">
         <div className="rounded-[30px] border border-dashed border-zinc-300 bg-white p-10 text-center text-zinc-600 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
@@ -45,28 +66,27 @@ export default async function SellerProductsPage({ searchParams }: Props) {
     );
   }
 
-  // Build the seller product query.
   let query = supabase
-    .from("products")
-    .select(`
+    .from("products" as never)
+    .select(
+      `
       *,
       categories (
         id,
         name
       )
-    `)
+    `
+    )
     .eq("seller_id", user.id)
     .order("created_at", { ascending: false });
 
   if (search.trim()) {
     const term = search.trim();
-    query = query.or(
-      `name.ilike.%${term}%,slug.ilike.%${term}%,sku.ilike.%${term}%`
-    );
+    query = query.or(`name.ilike.%${term}%,slug.ilike.%${term}%,sku.ilike.%${term}%`);
   }
 
   const { data: products } = await query;
-  const list = products ?? [];
+  const list = (products as SellerProductRow[] | null) ?? [];
 
   function getStatusClasses(status: string) {
     if (status === "active") {
@@ -86,7 +106,6 @@ export default async function SellerProductsPage({ searchParams }: Props) {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
-      {/* Page header */}
       <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -136,7 +155,6 @@ export default async function SellerProductsPage({ searchParams }: Props) {
         </div>
       </div>
 
-      {/* Empty state */}
       {list.length === 0 ? (
         <div className="mt-6 rounded-[30px] border border-dashed border-zinc-300 bg-white p-10 text-center text-zinc-600 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-900">
@@ -160,30 +178,29 @@ export default async function SellerProductsPage({ searchParams }: Props) {
         </div>
       ) : (
         <div className="mt-6 space-y-4">
-          {list.map((product: any) => (
+          {list.map((product) => (
             <div
               key={product.id}
               className="overflow-hidden rounded-[30px] border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
             >
               <div className="p-5 md:p-6">
                 <div className="grid gap-6 xl:grid-cols-[1fr_220px]">
-                  {/* Left side */}
                   <div className="flex min-w-0 flex-col gap-5 sm:flex-row">
                     <img
                       src={
                         product.thumbnail_url || "/images/placeholder-product.jpg"
                       }
-                      alt={product.name}
+                      alt={product.name || "Product"}
                       className="h-24 w-24 rounded-[20px] object-cover"
                     />
 
                     <div className="min-w-0 flex-1">
                       <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
-                        {product.name}
+                        {product.name || "Unnamed product"}
                       </h2>
 
                       <div className="mt-2 space-y-1 text-sm text-zinc-500 dark:text-zinc-400">
-                        <p>Slug: {product.slug}</p>
+                        <p>Slug: {product.slug || "-"}</p>
                         <p>SKU: {product.sku || "-"}</p>
                         <p>Category: {product.categories?.name || "General"}</p>
                       </div>
@@ -202,7 +219,7 @@ export default async function SellerProductsPage({ searchParams }: Props) {
                         </span>
 
                         <span className="inline-flex rounded-full bg-zinc-100 px-3 py-1 text-xs font-semibold text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
-                          Stock: {product.stock_quantity}
+                          Stock: {Number(product.stock_quantity || 0)}
                         </span>
                       </div>
 
@@ -241,7 +258,6 @@ export default async function SellerProductsPage({ searchParams }: Props) {
                     </div>
                   </div>
 
-                  {/* Right side */}
                   <div className="flex w-full flex-col gap-3 xl:w-auto">
                     <Link
                       href={`/seller/products/${product.id}/edit`}
@@ -251,7 +267,7 @@ export default async function SellerProductsPage({ searchParams }: Props) {
                     </Link>
 
                     <Link
-                      href={`/product/${product.slug}`}
+                      href={`/product/${product.slug || ""}`}
                       className="inline-flex h-11 items-center justify-center rounded-full border border-zinc-300 px-4 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-white dark:hover:bg-zinc-900"
                     >
                       View Product
@@ -260,7 +276,6 @@ export default async function SellerProductsPage({ searchParams }: Props) {
                 </div>
               </div>
 
-              {/* Bottom helper bar */}
               <div className="border-t border-zinc-200 bg-zinc-50 px-5 py-3 text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-400 md:px-6">
                 Use this page to monitor stock, product status, and update your
                 listings quickly.
