@@ -1,5 +1,23 @@
 import { createClient } from "@/lib/supabase/server";
 
+type ProfileRow = {
+  role?: string | null;
+};
+
+type SellerOrderItemRow = {
+  id: string;
+  quantity?: number | null;
+  price?: number | null;
+  products?: {
+    seller_id?: string | null;
+  } | null;
+  orders?: {
+    id?: string | null;
+    status?: string | null;
+    created_at?: string | null;
+  } | null;
+};
+
 export default async function SellerEarningsPage() {
   const supabase = await createClient();
 
@@ -16,12 +34,14 @@ export default async function SellerEarningsPage() {
   }
 
   const { data: profile } = await supabase
-    .from("profiles")
+    .from("profiles" as never)
     .select("role")
     .eq("id", user.id)
     .single();
 
-  if (!profile || profile.role !== "seller") {
+  const profileRow = profile as ProfileRow | null;
+
+  if (!profileRow || profileRow.role !== "seller") {
     return (
       <div className="mx-auto max-w-6xl px-4 py-10">
         Seller access required.
@@ -30,8 +50,9 @@ export default async function SellerEarningsPage() {
   }
 
   const { data: items } = await supabase
-    .from("order_items")
-    .select(`
+    .from("order_items" as never)
+    .select(
+      `
       id,
       quantity,
       price,
@@ -43,31 +64,34 @@ export default async function SellerEarningsPage() {
         status,
         created_at
       )
-    `);
+    `
+    );
 
   const sellerItems =
-    items?.filter((item: any) => item.products?.seller_id === user.id) ?? [];
+    ((items as SellerOrderItemRow[] | null) ?? []).filter(
+      (item) => item.products?.seller_id === user.id
+    );
 
   const totalOrders = new Set(
-    sellerItems.map((item: any) => item.orders?.id).filter(Boolean)
+    sellerItems.map((item) => item.orders?.id).filter(Boolean)
   ).size;
 
-  const totalSales = sellerItems.reduce((sum: number, item: any) => {
+  const totalSales = sellerItems.reduce((sum: number, item) => {
     return sum + Number(item.price || 0) * Number(item.quantity || 0);
   }, 0);
 
   const deliveredRevenue = sellerItems
-    .filter((item: any) => item.orders?.status === "delivered")
-    .reduce((sum: number, item: any) => {
+    .filter((item) => item.orders?.status === "delivered")
+    .reduce((sum: number, item) => {
       return sum + Number(item.price || 0) * Number(item.quantity || 0);
     }, 0);
 
   const pendingCount = new Set(
     sellerItems
-      .filter((item: any) =>
-        ["pending", "processing"].includes(item.orders?.status)
+      .filter((item) =>
+        ["pending", "processing"].includes(item.orders?.status || "")
       )
-      .map((item: any) => item.orders?.id)
+      .map((item) => item.orders?.id)
       .filter(Boolean)
   ).size;
 
