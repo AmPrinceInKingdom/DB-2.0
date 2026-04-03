@@ -9,6 +9,11 @@ type Category = {
   name: string;
 };
 
+type ActionResult = {
+  error?: string;
+  success?: string;
+};
+
 export default function SellerAddProductForm({
   categories,
 }: {
@@ -25,7 +30,9 @@ export default function SellerAddProductForm({
         formData.set("thumbnail_url", thumbnailUrl);
 
         startTransition(async () => {
-          const result = await createSellerProductAction(formData);
+          const result = (await createSellerProductAction(
+            formData
+          )) as ActionResult;
 
           if (result?.error) {
             setMessage(result.error);
