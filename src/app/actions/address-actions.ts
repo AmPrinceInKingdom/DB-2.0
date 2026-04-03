@@ -41,13 +41,13 @@ export async function createAddressAction(formData: FormData) {
 
   if (isDefault) {
     await supabase
-      .from("addresses")
-      .update({ is_default: false } as any)
+      .from("addresses" as never)
+      .update({ is_default: false } as never)
       .eq("user_id", user.id);
   }
 
   const { error } = await supabase
-    .from("addresses")
+    .from("addresses" as never)
     .insert({
       user_id: user.id,
       label: label || null,
@@ -61,7 +61,7 @@ export async function createAddressAction(formData: FormData) {
       country,
       address_type: addressType,
       is_default: isDefault,
-    } as any);
+    } as never);
 
   if (error) {
     return { error: error.message };
@@ -106,7 +106,7 @@ export async function updateAddressAction(formData: FormData) {
   }
 
   const { data: existingAddress, error: existingAddressError } = await supabase
-    .from("addresses")
+    .from("addresses" as never)
     .select("id, user_id")
     .eq("id", addressId)
     .single();
@@ -115,19 +115,19 @@ export async function updateAddressAction(formData: FormData) {
     return { error: "Address not found." };
   }
 
-  if (existingAddress.user_id !== user.id) {
+  if ((existingAddress as { user_id: string }).user_id !== user.id) {
     return { error: "Unauthorized." };
   }
 
   if (isDefault) {
     await supabase
-      .from("addresses")
-      .update({ is_default: false } as any)
+      .from("addresses" as never)
+      .update({ is_default: false } as never)
       .eq("user_id", user.id);
   }
 
   const { error } = await supabase
-    .from("addresses")
+    .from("addresses" as never)
     .update({
       label: label || null,
       recipient_name: recipientName,
@@ -140,7 +140,7 @@ export async function updateAddressAction(formData: FormData) {
       country,
       address_type: addressType,
       is_default: isDefault,
-    } as any)
+    } as never)
     .eq("id", addressId);
 
   if (error) {
@@ -172,17 +172,17 @@ export async function deleteAddressAction(formData: FormData) {
   }
 
   const { data: address } = await supabase
-    .from("addresses")
+    .from("addresses" as never)
     .select("user_id")
     .eq("id", addressId)
     .single();
 
-  if (!address || address.user_id !== user.id) {
+  if (!address || (address as { user_id: string }).user_id !== user.id) {
     return { error: "Unauthorized." };
   }
 
   const { error } = await supabase
-    .from("addresses")
+    .from("addresses" as never)
     .delete()
     .eq("id", addressId);
 
@@ -214,13 +214,13 @@ export async function setDefaultAddressAction(formData: FormData) {
   }
 
   await supabase
-    .from("addresses")
-    .update({ is_default: false } as any)
+    .from("addresses" as never)
+    .update({ is_default: false } as never)
     .eq("user_id", user.id);
 
   const { error } = await supabase
-    .from("addresses")
-    .update({ is_default: true } as any)
+    .from("addresses" as never)
+    .update({ is_default: true } as never)
     .eq("id", addressId)
     .eq("user_id", user.id);
 
