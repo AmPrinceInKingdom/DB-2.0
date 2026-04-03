@@ -21,8 +21,8 @@ export async function markNotificationAsReadAction(formData: FormData) {
   }
 
   const { error } = await supabase
-    .from("notifications")
-    .update({ is_read: true })
+    .from("notifications" as never)
+    .update({ is_read: true } as never)
     .eq("id", notificationId)
     .eq("user_id", user.id);
 
@@ -48,8 +48,8 @@ export async function markAllNotificationsAsReadAction() {
   }
 
   const { error } = await supabase
-    .from("notifications")
-    .update({ is_read: true })
+    .from("notifications" as never)
+    .update({ is_read: true } as never)
     .eq("user_id", user.id)
     .eq("is_read", false);
 
