@@ -4,23 +4,34 @@ import { getCart } from "@/lib/cart/getCart";
 import CartQuantityForm from "@/components/cart/CartQuantityForm";
 import RemoveCartItemButton from "@/components/cart/RemoveCartItemButton";
 
+type CartItemRow = {
+  id: string;
+  quantity?: number | null;
+  products?: {
+    name?: string | null;
+    price?: number | null;
+    thumbnail_url?: string | null;
+  } | null;
+};
+
+type CartRow = {
+  cart_items?: CartItemRow[] | null;
+};
+
 export default async function CartPage() {
-  const cart = await getCart();
+  const cart = (await getCart()) as CartRow | null;
   const items = cart?.cart_items ?? [];
 
-  // Calculate subtotal using current product prices and cart quantities.
-  const subtotal = items.reduce((sum: number, item: any) => {
+  const subtotal = items.reduce((sum: number, item: CartItemRow) => {
     return sum + Number(item.products?.price || 0) * Number(item.quantity || 1);
   }, 0);
 
-  // Calculate total quantity across all cart items.
-  const totalUnits = items.reduce((sum: number, item: any) => {
+  const totalUnits = items.reduce((sum: number, item: CartItemRow) => {
     return sum + Number(item.quantity || 1);
   }, 0);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
-      {/* Page header */}
       <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -44,7 +55,6 @@ export default async function CartPage() {
         </div>
       </div>
 
-      {/* Empty state */}
       {items.length === 0 ? (
         <div className="mt-6 rounded-[30px] border border-dashed border-zinc-300 bg-white p-10 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-zinc-100 text-2xl dark:bg-zinc-900">
@@ -68,9 +78,8 @@ export default async function CartPage() {
         </div>
       ) : (
         <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_380px]">
-          {/* Cart item list */}
           <div className="space-y-4">
-            {items.map((item: any) => {
+            {items.map((item: CartItemRow) => {
               const price = Number(item.products?.price || 0);
               const quantity = Number(item.quantity || 1);
               const lineTotal = price * quantity;
@@ -81,7 +90,6 @@ export default async function CartPage() {
                   className="overflow-hidden rounded-[30px] border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
                 >
                   <div className="flex flex-col gap-4 p-4 sm:flex-row sm:p-5">
-                    {/* Product image */}
                     <div className="h-24 w-24 shrink-0 overflow-hidden rounded-[22px] bg-zinc-100 dark:bg-zinc-900">
                       <img
                         src={
@@ -93,7 +101,6 @@ export default async function CartPage() {
                       />
                     </div>
 
-                    {/* Product details */}
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                         <div className="min-w-0">
@@ -128,7 +135,6 @@ export default async function CartPage() {
             })}
           </div>
 
-          {/* Cart summary */}
           <div className="lg:sticky lg:top-24 lg:h-fit">
             <div className="rounded-[30px] border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
               <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
