@@ -7,13 +7,23 @@ export default function SignupPage() {
         <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
           Create account
         </h1>
+
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
           Join Deal Bazaar and start shopping.
         </p>
 
-        <form action={signupAction} className="mt-6 space-y-4">
+        <form
+          action={async (formData: FormData) => {
+            "use server";
+            await signupAction(formData);
+          }}
+          className="mt-6 space-y-4"
+        >
           <div>
-            <label className="mb-2 block text-sm font-medium">Full name</label>
+            <label className="mb-2 block text-sm font-medium">
+              Full name
+            </label>
+
             <input
               name="fullName"
               type="text"
@@ -24,7 +34,10 @@ export default function SignupPage() {
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium">Email</label>
+            <label className="mb-2 block text-sm font-medium">
+              Email
+            </label>
+
             <input
               name="email"
               type="email"
@@ -35,7 +48,10 @@ export default function SignupPage() {
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium">Password</label>
+            <label className="mb-2 block text-sm font-medium">
+              Password
+            </label>
+
             <input
               name="password"
               type="password"
