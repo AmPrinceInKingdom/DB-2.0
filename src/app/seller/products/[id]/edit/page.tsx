@@ -11,16 +11,35 @@ type Props = {
   }>;
 };
 
+type ProfileRow = {
+  role?: string | null;
+};
+
+type SellerProductRow = {
+  id: string;
+  thumbnail_url?: string | null;
+  [key: string]: any;
+};
+
+type CategoryRow = {
+  id: string;
+  name?: string | null;
+};
+
+type ProductImageRow = {
+  id: string;
+  image_url?: string | null;
+  sort_order?: number | null;
+};
+
 export default async function SellerEditProductPage({ params }: Props) {
   const { id } = await params;
   const supabase = await createClient();
 
-  // Load the authenticated user.
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Stop here if the user is not logged in.
   if (!user) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-10">
@@ -31,14 +50,15 @@ export default async function SellerEditProductPage({ params }: Props) {
     );
   }
 
-  // Confirm seller access.
   const { data: profile } = await supabase
-    .from("profiles")
+    .from("profiles" as never)
     .select("role")
     .eq("id", user.id)
     .single();
 
-  if (!profile || profile.role !== "seller") {
+  const profileRow = profile as ProfileRow | null;
+
+  if (!profileRow || profileRow.role !== "seller") {
     return (
       <div className="mx-auto max-w-6xl px-4 py-10">
         <div className="rounded-[30px] border border-dashed border-zinc-300 bg-white p-10 text-center text-zinc-600 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
@@ -48,28 +68,30 @@ export default async function SellerEditProductPage({ params }: Props) {
     );
   }
 
-  // Load product, category list, and gallery images together.
   const [{ data: product }, { data: categories }, { data: images }] =
     await Promise.all([
       supabase
-        .from("products")
+        .from("products" as never)
         .select("*")
         .eq("id", id)
         .eq("seller_id", user.id)
         .single(),
       supabase
-        .from("categories")
+        .from("categories" as never)
         .select("id, name")
         .order("sort_order", { ascending: true }),
       supabase
-        .from("product_images")
+        .from("product_images" as never)
         .select("*")
         .eq("product_id", id)
         .order("sort_order"),
     ]);
 
-  // Show a clean empty state when the product does not exist.
-  if (!product) {
+  const productRow = product as SellerProductRow | null;
+  const categoryList = (categories as CategoryRow[] | null) ?? [];
+  const galleryImages = (images as ProductImageRow[] | null) ?? [];
+
+  if (!productRow) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-10">
         <div className="rounded-[30px] border border-dashed border-zinc-300 bg-white p-10 text-center text-zinc-600 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
@@ -79,12 +101,10 @@ export default async function SellerEditProductPage({ params }: Props) {
     );
   }
 
-  const galleryImages = images ?? [];
-  const totalImages = (product.thumbnail_url ? 1 : 0) + galleryImages.length;
+  const totalImages = (productRow.thumbnail_url ? 1 : 0) + galleryImages.length;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 md:px-6 md:py-8">
-      {/* Page header */}
       <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
         <div className="flex items-start gap-4">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400">
@@ -108,7 +128,6 @@ export default async function SellerEditProductPage({ params }: Props) {
         </div>
       </div>
 
-      {/* Edit form panel */}
       <div className="mt-6 rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
         <div className="mb-5">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-600 dark:text-red-400">
@@ -126,12 +145,11 @@ export default async function SellerEditProductPage({ params }: Props) {
         </div>
 
         <SellerEditProductForm
-          product={product}
-          categories={categories ?? []}
+          product={productRow}
+          categories={categoryList}
         />
       </div>
 
-      {/* Product images panel */}
       <div className="mt-6 rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
         <div className="flex items-start gap-4">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400">
@@ -183,14 +201,14 @@ export default async function SellerEditProductPage({ params }: Props) {
 
         {galleryImages.length ? (
           <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {galleryImages.map((img: any) => (
+            {galleryImages.map((img) => (
               <div
                 key={img.id}
                 className="overflow-hidden rounded-[28px] border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900"
               >
                 <div className="p-4">
                   <img
-                    src={img.image_url}
+                    src={img.image_url || "/images/placeholder-product.jpg"}
                     alt="Product"
                     className="h-44 w-full rounded-[18px] object-cover"
                   />
