@@ -4,15 +4,36 @@ import { createClient } from "@/lib/supabase/server";
 import { getCart } from "@/lib/cart/getCart";
 import CouponBox from "@/components/checkout/CouponBox";
 
+type CartItemRow = {
+  id: string;
+  quantity?: number | null;
+  products?: {
+    name?: string | null;
+    price?: number | null;
+    thumbnail_url?: string | null;
+  } | null;
+};
+
+type CartRow = {
+  cart_items?: CartItemRow[] | null;
+};
+
+type AddressRow = {
+  recipient_name?: string | null;
+  phone?: string | null;
+  address_line_1?: string | null;
+  address_line_2?: string | null;
+  city?: string | null;
+  postal_code?: string | null;
+};
+
 export default async function CheckoutPage() {
   const supabase = await createClient();
 
-  // Load the currently logged-in user.
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Stop checkout if the user is not logged in.
   if (!user) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-10">
@@ -35,30 +56,27 @@ export default async function CheckoutPage() {
     );
   }
 
-  const cart = await getCart();
+  const cart = (await getCart()) as CartRow | null;
 
-  // Load the user's default or most recent address.
   const { data: address } = await supabase
-    .from("addresses")
+    .from("addresses" as never)
     .select("*")
     .eq("user_id", user.id)
     .order("is_default", { ascending: false })
     .limit(1)
     .single();
 
+  const addressRow = address as AddressRow | null;
   const items = cart?.cart_items ?? [];
 
-  // Calculate cart subtotal.
-  const subtotal = items.reduce((sum: number, item: any) => {
+  const subtotal = items.reduce((sum: number, item: CartItemRow) => {
     return sum + Number(item.products?.price || 0) * Number(item.quantity || 0);
   }, 0);
 
-  // Count total units in the cart.
-  const totalUnits = items.reduce((sum: number, item: any) => {
+  const totalUnits = items.reduce((sum: number, item: CartItemRow) => {
     return sum + Number(item.quantity || 0);
   }, 0);
 
-  // Prevent checkout if the cart is empty.
   if (items.length === 0) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-10">
@@ -83,7 +101,6 @@ export default async function CheckoutPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
-      {/* Page heading */}
       <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-600 dark:text-red-400">
           Final step
@@ -99,9 +116,7 @@ export default async function CheckoutPage() {
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_400px]">
-        {/* Left side: checkout form details */}
         <div className="space-y-6">
-          {/* Delivery address */}
           <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
@@ -121,19 +136,19 @@ export default async function CheckoutPage() {
               </Link>
             </div>
 
-            {address ? (
+            {addressRow ? (
               <div className="mt-5 rounded-[24px] border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900">
                 <p className="text-base font-bold text-zinc-900 dark:text-white">
-                  {address.recipient_name}
+                  {addressRow.recipient_name || ""}
                 </p>
                 <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
-                  {address.phone}
+                  {addressRow.phone || ""}
                 </p>
                 <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-                  {address.address_line_1}
-                  {address.address_line_2 ? `, ${address.address_line_2}` : ""}
-                  {address.city ? `, ${address.city}` : ""}
-                  {address.postal_code ? `, ${address.postal_code}` : ""}
+                  {addressRow.address_line_1 || ""}
+                  {addressRow.address_line_2 ? `, ${addressRow.address_line_2}` : ""}
+                  {addressRow.city ? `, ${addressRow.city}` : ""}
+                  {addressRow.postal_code ? `, ${addressRow.postal_code}` : ""}
                 </p>
               </div>
             ) : (
@@ -144,7 +159,6 @@ export default async function CheckoutPage() {
             )}
           </div>
 
-          {/* Order items preview */}
           <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-600 dark:text-red-400">
@@ -156,7 +170,7 @@ export default async function CheckoutPage() {
             </div>
 
             <div className="mt-5 space-y-4">
-              {items.map((item: any) => {
+              {items.map((item: CartItemRow) => {
                 const price = Number(item.products?.price || 0);
                 const quantity = Number(item.quantity || 0);
 
@@ -193,7 +207,6 @@ export default async function CheckoutPage() {
             </div>
           </div>
 
-          {/* Payment note */}
           <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-600 dark:text-red-400">
               Payment
@@ -208,7 +221,6 @@ export default async function CheckoutPage() {
           </div>
         </div>
 
-        {/* Right side: summary + order form */}
         <div className="lg:sticky lg:top-24 lg:h-fit">
           <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
             <h2 className="text-xl font-bold text-zinc-900 dark:text-white">
@@ -237,7 +249,6 @@ export default async function CheckoutPage() {
             </div>
 
             <form action={createOrderFromCartAction} className="mt-6 space-y-5">
-              {/* Payment methods */}
               <div className="space-y-3">
                 <label className="flex cursor-pointer items-start gap-3 rounded-[22px] border border-zinc-200 bg-zinc-50 p-4 transition hover:border-red-300 dark:border-zinc-800 dark:bg-zinc-900">
                   <input
@@ -277,19 +288,17 @@ export default async function CheckoutPage() {
                 </label>
               </div>
 
-              {/* Coupon area */}
               <CouponBox subtotal={subtotal} />
 
-              {/* Submit button */}
               <button
                 type="submit"
-                disabled={!address}
+                disabled={!addressRow}
                 className="inline-flex h-12 w-full items-center justify-center rounded-full bg-red-600 px-6 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:text-zinc-500 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500"
               >
                 Place Order
               </button>
 
-              {!address ? (
+              {!addressRow ? (
                 <p className="text-xs leading-6 text-red-500 dark:text-red-400">
                   Add a delivery address before placing your order.
                 </p>
