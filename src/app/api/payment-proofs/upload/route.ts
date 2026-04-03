@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+type OrderRow = {
+  id: string;
+  user_id: string;
+  order_number: string;
+};
+
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
@@ -45,21 +51,20 @@ export async function POST(request: Request) {
     }
 
     const { data: order, error: orderError } = await supabase
-      .from("orders")
+      .from("orders" as never)
       .select("id, user_id, order_number")
       .eq("id", orderId)
       .eq("user_id", user.id)
       .single();
 
-    if (orderError || !order) {
-      return NextResponse.json(
-        { error: "Order not found." },
-        { status: 404 }
-      );
+    const orderRow = order as OrderRow | null;
+
+    if (orderError || !orderRow) {
+      return NextResponse.json({ error: "Order not found." }, { status: 404 });
     }
 
     const extension = file.name.split(".").pop() || "jpg";
-    const filePath = `${user.id}/${order.order_number}-${Date.now()}.${extension}`;
+    const filePath = `${user.id}/${orderRow.order_number}-${Date.now()}.${extension}`;
 
     const { error: uploadError } = await supabase.storage
       .from("payment-proofs")
@@ -81,14 +86,16 @@ export async function POST(request: Request) {
     const imageUrl = publicUrlData.publicUrl;
 
     const { error: insertError } = await supabase
-      .from("payment_proofs")
-      .insert({
-        order_id: order.id,
-        user_id: user.id,
-        image_url: imageUrl,
-        note: note || null,
-        verification_status: "pending",
-      });
+      .from("payment_proofs" as never)
+      .insert(
+        {
+          order_id: orderRow.id,
+          user_id: user.id,
+          image_url: imageUrl,
+          note: note || null,
+          verification_status: "pending",
+        } as never
+      );
 
     if (insertError) {
       return NextResponse.json(
@@ -98,11 +105,13 @@ export async function POST(request: Request) {
     }
 
     const { error: updateOrderError } = await supabase
-      .from("orders")
-      .update({
-        payment_status: "awaiting_verification",
-      })
-      .eq("id", order.id);
+      .from("orders" as never)
+      .update(
+        {
+          payment_status: "awaiting_verification",
+        } as never
+      )
+      .eq("id", orderRow.id);
 
     if (updateOrderError) {
       return NextResponse.json(
