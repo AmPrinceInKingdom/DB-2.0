@@ -8,11 +8,38 @@ type Props = {
   }>;
 };
 
+type SellerOrderRow = {
+  id: string;
+  order_number?: string | null;
+  order_status?: string | null;
+  payment_status?: string | null;
+  shipping_full_name?: string | null;
+  shipping_address_line_1?: string | null;
+  shipping_city?: string | null;
+  courier_name?: string | null;
+  tracking_number?: string | null;
+  shipped_at?: string | null;
+  delivered_at?: string | null;
+  created_at?: string | null;
+  total_amount?: number | null;
+};
+
+type SellerOrderItemRow = {
+  id: string;
+  quantity?: number | null;
+  unit_price?: number | null;
+  products?: {
+    name?: string | null;
+    thumbnail_url?: string | null;
+    seller_id?: string | null;
+  } | null;
+  orders?: SellerOrderRow | null;
+};
+
 export default async function SellerOrderDetails({ params }: Props) {
   const { id } = await params;
   const supabase = await createClient();
 
-  // Load the authenticated seller.
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -27,10 +54,10 @@ export default async function SellerOrderDetails({ params }: Props) {
     );
   }
 
-  // Load the order items with product and order information.
   const { data: items } = await supabase
-    .from("order_items")
-    .select(`
+    .from("order_items" as never)
+    .select(
+      `
       *,
       products (
         name,
@@ -52,12 +79,14 @@ export default async function SellerOrderDetails({ params }: Props) {
         created_at,
         total_amount
       )
-    `)
+    `
+    )
     .eq("order_id", id);
 
-  // Keep only items that belong to the logged-in seller.
   const sellerItems =
-    items?.filter((i: any) => i.products?.seller_id === user.id) ?? [];
+    ((items as SellerOrderItemRow[] | null) ?? []).filter(
+      (i) => i.products?.seller_id === user.id
+    );
 
   if (!sellerItems.length) {
     return (
@@ -69,7 +98,17 @@ export default async function SellerOrderDetails({ params }: Props) {
     );
   }
 
-  const order = sellerItems[0].orders;
+  const orderRow = sellerItems[0]?.orders;
+
+  if (!orderRow) {
+    return (
+      <div className="mx-auto max-w-5xl px-4 py-10">
+        <div className="rounded-[30px] border border-dashed border-zinc-300 bg-white p-10 text-center text-zinc-600 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
+          Order not found
+        </div>
+      </div>
+    );
+  }
 
   function getOrderStatusClasses(status: string) {
     if (status === "delivered") {
@@ -109,14 +148,13 @@ export default async function SellerOrderDetails({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
-      {/* Top page header */}
       <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-600 dark:text-red-400">
           Seller order details
         </p>
 
         <h1 className="mt-2 text-2xl font-bold text-zinc-900 dark:text-white md:text-3xl">
-          Order #{order.order_number}
+          Order #{orderRow.order_number || "-"}
         </h1>
 
         <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
@@ -126,9 +164,7 @@ export default async function SellerOrderDetails({ params }: Props) {
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_380px]">
-        {/* Left side */}
         <div className="space-y-6">
-          {/* Overview panel */}
           <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <div className="rounded-[22px] border border-zinc-200 p-4 dark:border-zinc-800">
@@ -138,10 +174,10 @@ export default async function SellerOrderDetails({ params }: Props) {
                 <div className="mt-3">
                   <span
                     className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold capitalize ${getOrderStatusClasses(
-                      String(order.order_status || "")
+                      String(orderRow.order_status || "")
                     )}`}
                   >
-                    {order.order_status || "pending"}
+                    {orderRow.order_status || "pending"}
                   </span>
                 </div>
               </div>
@@ -153,10 +189,10 @@ export default async function SellerOrderDetails({ params }: Props) {
                 <div className="mt-3">
                   <span
                     className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold capitalize ${getPaymentStatusClasses(
-                      String(order.payment_status || "")
+                      String(orderRow.payment_status || "")
                     )}`}
                   >
-                    {order.payment_status || "pending"}
+                    {orderRow.payment_status || "pending"}
                   </span>
                 </div>
               </div>
@@ -166,8 +202,8 @@ export default async function SellerOrderDetails({ params }: Props) {
                   Ordered At
                 </p>
                 <p className="mt-2 text-sm font-semibold text-zinc-900 dark:text-white">
-                  {order.created_at
-                    ? new Date(order.created_at).toLocaleString()
+                  {orderRow.created_at
+                    ? new Date(orderRow.created_at).toLocaleString()
                     : "-"}
                 </p>
               </div>
@@ -177,26 +213,24 @@ export default async function SellerOrderDetails({ params }: Props) {
                   Order Total
                 </p>
                 <p className="mt-2 text-lg font-bold text-zinc-900 dark:text-white">
-                  Rs. {Number(order.total_amount || 0).toLocaleString()}
+                  Rs. {Number(orderRow.total_amount || 0).toLocaleString()}
                 </p>
               </div>
             </div>
 
-            {/* Customer address */}
             <div className="mt-5 rounded-[24px] border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900">
               <p className="text-sm font-semibold text-zinc-900 dark:text-white">
                 Customer Shipping Address
               </p>
 
               <div className="mt-3 space-y-1 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-                <p>Customer: {order.shipping_full_name || "-"}</p>
-                <p>Address: {order.shipping_address_line_1 || "-"}</p>
-                <p>City: {order.shipping_city || "-"}</p>
+                <p>Customer: {orderRow.shipping_full_name || "-"}</p>
+                <p>Address: {orderRow.shipping_address_line_1 || "-"}</p>
+                <p>City: {orderRow.shipping_city || "-"}</p>
               </div>
             </div>
           </div>
 
-          {/* Seller items */}
           <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-600 dark:text-red-400">
               Seller items
@@ -207,7 +241,7 @@ export default async function SellerOrderDetails({ params }: Props) {
             </h2>
 
             <div className="mt-5 space-y-4">
-              {sellerItems.map((item: any) => {
+              {sellerItems.map((item) => {
                 const lineTotal =
                   Number(item.unit_price || 0) * Number(item.quantity || 0);
 
@@ -229,10 +263,10 @@ export default async function SellerOrderDetails({ params }: Props) {
 
                         <div className="min-w-0">
                           <p className="font-bold text-zinc-900 dark:text-white">
-                            {item.products?.name}
+                            {item.products?.name || "Unnamed product"}
                           </p>
                           <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                            Qty: {item.quantity}
+                            Qty: {item.quantity || 0}
                           </p>
                           <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
                             Unit Price: Rs.{" "}
@@ -256,7 +290,6 @@ export default async function SellerOrderDetails({ params }: Props) {
             </div>
           </div>
 
-          {/* Current shipping info */}
           <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
             <h3 className="text-lg font-bold text-zinc-900 dark:text-white">
               Current Shipping Info
@@ -268,7 +301,7 @@ export default async function SellerOrderDetails({ params }: Props) {
                   Courier
                 </p>
                 <p className="mt-2 text-sm font-semibold text-zinc-900 dark:text-white">
-                  {order.courier_name || "-"}
+                  {orderRow.courier_name || "-"}
                 </p>
               </div>
 
@@ -277,7 +310,7 @@ export default async function SellerOrderDetails({ params }: Props) {
                   Tracking
                 </p>
                 <p className="mt-2 text-sm font-semibold text-zinc-900 dark:text-white">
-                  {order.tracking_number || "-"}
+                  {orderRow.tracking_number || "-"}
                 </p>
               </div>
 
@@ -286,8 +319,8 @@ export default async function SellerOrderDetails({ params }: Props) {
                   Shipped At
                 </p>
                 <p className="mt-2 text-sm font-semibold text-zinc-900 dark:text-white">
-                  {order.shipped_at
-                    ? new Date(order.shipped_at).toLocaleString()
+                  {orderRow.shipped_at
+                    ? new Date(orderRow.shipped_at).toLocaleString()
                     : "-"}
                 </p>
               </div>
@@ -297,8 +330,8 @@ export default async function SellerOrderDetails({ params }: Props) {
                   Delivered At
                 </p>
                 <p className="mt-2 text-sm font-semibold text-zinc-900 dark:text-white">
-                  {order.delivered_at
-                    ? new Date(order.delivered_at).toLocaleString()
+                  {orderRow.delivered_at
+                    ? new Date(orderRow.delivered_at).toLocaleString()
                     : "-"}
                 </p>
               </div>
@@ -306,9 +339,7 @@ export default async function SellerOrderDetails({ params }: Props) {
           </div>
         </div>
 
-        {/* Right side */}
         <div className="space-y-6">
-          {/* Status update */}
           <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
             <p className="text-sm font-semibold text-zinc-900 dark:text-white">
               Update Order Status
@@ -316,21 +347,19 @@ export default async function SellerOrderDetails({ params }: Props) {
 
             <div className="mt-4">
               <UpdateSellerOrderStatus
-                orderId={order.id}
-                status={order.order_status}
+                orderId={orderRow.id}
+                status={orderRow.order_status || "pending"}
               />
             </div>
           </div>
 
-          {/* Shipping update form */}
           <ShippingUpdateForm
-            orderId={order.id}
-            initialCourierName={order.courier_name}
-            initialTrackingNumber={order.tracking_number}
-            initialOrderStatus={order.order_status}
+            orderId={orderRow.id}
+            initialCourierName={orderRow.courier_name || ""}
+            initialTrackingNumber={orderRow.tracking_number || ""}
+            initialOrderStatus={orderRow.order_status || "pending"}
           />
 
-          {/* Helper card */}
           <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
             <h3 className="text-lg font-bold text-zinc-900 dark:text-white">
               Seller Note
