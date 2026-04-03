@@ -1,6 +1,13 @@
 import ThemeToggle from "@/components/shared/ThemeToggle";
 import { createClient } from "@/lib/supabase/server";
 
+type AccountProfile = {
+  full_name: string | null;
+  email: string | null;
+  role: string | null;
+  phone: string | null;
+};
+
 /**
  * Account profile and settings page.
  * Theme switching is intentionally placed here instead of the header
@@ -9,23 +16,22 @@ import { createClient } from "@/lib/supabase/server";
 export default async function AccountProfilePage() {
   const supabase = await createClient();
 
-  // Load the authenticated user.
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Load the matching profile data if the user exists.
-  const { data: profile } = user
+  const profileResult = user
     ? await supabase
         .from("profiles")
         .select("full_name, email, role, phone")
         .eq("id", user.id)
         .single()
-    : { data: null };
+    : null;
+
+  const profile = (profileResult?.data ?? null) as AccountProfile | null;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 md:px-6 md:py-8">
-      {/* Top heading panel */}
       <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-600 dark:text-red-400">
           Profile & Preferences
@@ -42,7 +48,6 @@ export default async function AccountProfilePage() {
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-        {/* Left side: account information */}
         <div className="space-y-6">
           <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
             <div>
@@ -95,7 +100,6 @@ export default async function AccountProfilePage() {
             </div>
           </div>
 
-          {/* Simple account note */}
           <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
             <h2 className="text-xl font-bold text-zinc-900 dark:text-white">
               Account Status
@@ -114,7 +118,6 @@ export default async function AccountProfilePage() {
           </div>
         </div>
 
-        {/* Right side: appearance settings */}
         <div className="space-y-6">
           <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
             <div>
@@ -145,7 +148,6 @@ export default async function AccountProfilePage() {
             </div>
           </div>
 
-          {/* Simple preferences card */}
           <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
             <h2 className="text-xl font-bold text-zinc-900 dark:text-white">
               Preferences
