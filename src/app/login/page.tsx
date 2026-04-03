@@ -1,6 +1,11 @@
 import { loginAction } from "@/app/auth/actions";
 
 export default function LoginPage() {
+  async function submitLoginAction(formData: FormData) {
+    "use server";
+    await loginAction(formData);
+  }
+
   return (
     <div className="mx-auto flex min-h-[70vh] w-full max-w-md items-center px-4 py-10">
       <div className="w-full rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
@@ -11,7 +16,7 @@ export default function LoginPage() {
           Sign in to your Deal Bazaar account.
         </p>
 
-        <form action={loginAction} className="mt-6 space-y-4">
+        <form action={submitLoginAction} className="mt-6 space-y-4">
           <div>
             <label className="mb-2 block text-sm font-medium">Email</label>
             <input
