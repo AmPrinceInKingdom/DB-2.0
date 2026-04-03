@@ -18,7 +18,6 @@ type CategoryRow = {
   slug?: string | null;
   is_active?: boolean | null;
   sort_order?: number | null;
-  [key: string]: any;
 };
 
 export default async function EditCategoryPage({ params }: Props) {
@@ -75,6 +74,14 @@ export default async function EditCategoryPage({ params }: Props) {
     );
   }
 
+  const categoryForForm = {
+    id: categoryRow.id,
+    name: categoryRow.name || "",
+    slug: categoryRow.slug || "",
+    is_active: Boolean(categoryRow.is_active),
+    sort_order: Number(categoryRow.sort_order || 0),
+  };
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 md:px-6 md:py-8">
       <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
@@ -115,7 +122,7 @@ export default async function EditCategoryPage({ params }: Props) {
           </p>
         </div>
 
-        <EditCategoryForm category={categoryRow} />
+        <EditCategoryForm category={categoryForForm} />
       </div>
     </div>
   );
