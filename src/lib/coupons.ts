@@ -1,5 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 
+type CouponRow = {
+  id: string;
+  code: string;
+  discount_type: "fixed" | "percent";
+  discount_value: number | null;
+  is_active: boolean | null;
+  expires_at: string | null;
+  usage_limit: number | null;
+  used_count: number | null;
+  min_order_amount: number | null;
+};
+
 export type ValidatedCouponResult =
   | {
       ok: true;
@@ -32,11 +44,13 @@ export async function validateCouponForSubtotal(
 
   const supabase = await createClient();
 
-  const { data: coupon, error } = await supabase
-    .from("coupons")
+  const { data, error } = await supabase
+    .from("coupons" as never)
     .select("*")
     .eq("code", code)
     .maybeSingle();
+
+  const coupon = data as CouponRow | null;
 
   if (error || !coupon) {
     return { ok: false, error: "Invalid coupon code." };
