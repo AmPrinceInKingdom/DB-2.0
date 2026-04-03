@@ -17,13 +17,26 @@ type ProfileRow = {
 
 type SellerProductRow = {
   id: string;
+  name: string;
+  slug: string;
+  short_description?: string | null;
+  description?: string | null;
+  sku?: string | null;
   thumbnail_url?: string | null;
-  [key: string]: any;
+  category_id?: string | null;
+  price?: number | null;
+  compare_at_price?: number | null;
+  stock_quantity?: number | null;
+  status?: string | null;
+  is_featured?: boolean | null;
+  seller_id?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 };
 
 type CategoryRow = {
   id: string;
-  name?: string | null;
+  name: string;
 };
 
 type ProductImageRow = {
@@ -87,11 +100,14 @@ export default async function SellerEditProductPage({ params }: Props) {
         .order("sort_order"),
     ]);
 
-  const productRow = product as SellerProductRow | null;
-  const categoryList = (categories as CategoryRow[] | null) ?? [];
+  const productData = product as Partial<SellerProductRow> | null;
+  const categoryList = ((categories as CategoryRow[] | null) ?? []).filter(
+    (category): category is CategoryRow =>
+      Boolean(category?.id) && Boolean(category?.name)
+  );
   const galleryImages = (images as ProductImageRow[] | null) ?? [];
 
-  if (!productRow) {
+  if (!productData) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-10">
         <div className="rounded-[30px] border border-dashed border-zinc-300 bg-white p-10 text-center text-zinc-600 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
@@ -100,6 +116,29 @@ export default async function SellerEditProductPage({ params }: Props) {
       </div>
     );
   }
+
+  const productRow: SellerProductRow = {
+    id: String(productData.id || id),
+    name: String(productData.name || ""),
+    slug: String(productData.slug || ""),
+    short_description: productData.short_description ?? null,
+    description: productData.description ?? null,
+    sku: productData.sku ?? null,
+    thumbnail_url: productData.thumbnail_url ?? null,
+    category_id: productData.category_id ?? null,
+    price: Number(productData.price || 0),
+    compare_at_price:
+      productData.compare_at_price === null ||
+      productData.compare_at_price === undefined
+        ? null
+        : Number(productData.compare_at_price),
+    stock_quantity: Number(productData.stock_quantity || 0),
+    status: productData.status ?? "draft",
+    is_featured: Boolean(productData.is_featured),
+    seller_id: productData.seller_id ?? user.id,
+    created_at: productData.created_at ?? null,
+    updated_at: productData.updated_at ?? null,
+  };
 
   const totalImages = (productRow.thumbnail_url ? 1 : 0) + galleryImages.length;
 
@@ -144,10 +183,7 @@ export default async function SellerEditProductPage({ params }: Props) {
           </p>
         </div>
 
-        <SellerEditProductForm
-          product={productRow}
-          categories={categoryList}
-        />
+        <SellerEditProductForm product={productRow} categories={categoryList} />
       </div>
 
       <div className="mt-6 rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
