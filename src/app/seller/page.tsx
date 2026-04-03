@@ -2,15 +2,41 @@ import Link from "next/link";
 import { BarChart3, Package, Plus, ShoppingBag, Wallet } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 
+type ProfileRow = {
+  role?: string | null;
+  full_name?: string | null;
+  email?: string | null;
+};
+
+type SellerOrderItemRow = {
+  id: string;
+  quantity?: number | null;
+  unit_price?: number | null;
+  products?: {
+    seller_id?: string | null;
+  } | null;
+  orders?: {
+    id?: string | null;
+    order_status?: string | null;
+  } | null;
+};
+
+type RecentProductRow = {
+  id: string;
+  name?: string | null;
+  status?: string | null;
+  price?: number | null;
+  thumbnail_url?: string | null;
+  created_at?: string | null;
+};
+
 export default async function SellerDashboardPage() {
   const supabase = await createClient();
 
-  // Load the authenticated user.
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Stop here if the user is not logged in.
   if (!user) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-10">
@@ -21,14 +47,15 @@ export default async function SellerDashboardPage() {
     );
   }
 
-  // Load profile and confirm seller access.
   const { data: profile } = await supabase
-    .from("profiles")
+    .from("profiles" as never)
     .select("role, full_name, email")
     .eq("id", user.id)
     .single();
 
-  if (!profile || profile.role !== "seller") {
+  const profileRow = profile as ProfileRow | null;
+
+  if (!profileRow || profileRow.role !== "seller") {
     return (
       <div className="mx-auto max-w-7xl px-4 py-10">
         <div className="rounded-[30px] border border-dashed border-zinc-300 bg-white p-10 text-center text-zinc-600 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
@@ -46,25 +73,26 @@ export default async function SellerDashboardPage() {
     { data: recentProducts },
   ] = await Promise.all([
     supabase
-      .from("products")
+      .from("products" as never)
       .select("*", { count: "exact", head: true })
       .eq("seller_id", user.id),
 
     supabase
-      .from("products")
+      .from("products" as never)
       .select("*", { count: "exact", head: true })
       .eq("seller_id", user.id)
       .eq("status", "active"),
 
     supabase
-      .from("products")
+      .from("products" as never)
       .select("*", { count: "exact", head: true })
       .eq("seller_id", user.id)
       .eq("status", "draft"),
 
     supabase
-      .from("order_items")
-      .select(`
+      .from("order_items" as never)
+      .select(
+        `
         id,
         quantity,
         unit_price,
@@ -75,47 +103,45 @@ export default async function SellerDashboardPage() {
           id,
           order_status
         )
-      `),
+      `
+      ),
 
     supabase
-      .from("products")
+      .from("products" as never)
       .select("id, name, slug, status, price, thumbnail_url, created_at")
       .eq("seller_id", user.id)
       .order("created_at", { ascending: false })
       .limit(5),
   ]);
 
-  // Filter order items to include only the seller's own products.
   const sellerItems =
-    sellerOrderItems?.filter(
-      (item: any) => item.products?.seller_id === user.id
-    ) ?? [];
+    ((sellerOrderItems as SellerOrderItemRow[] | null) ?? []).filter(
+      (item) => item.products?.seller_id === user.id
+    );
 
-  // Count unique orders related to this seller.
+  const recentProductList = (recentProducts as RecentProductRow[] | null) ?? [];
+
   const totalOrders = new Set(
-    sellerItems.map((item: any) => item.orders?.id).filter(Boolean)
+    sellerItems.map((item) => item.orders?.id).filter(Boolean)
   ).size;
 
-  // Count pending and processing orders.
   const pendingOrders = new Set(
     sellerItems
-      .filter((item: any) =>
-        ["pending", "processing"].includes(item.orders?.order_status)
+      .filter((item) =>
+        ["pending", "processing"].includes(item.orders?.order_status || "")
       )
-      .map((item: any) => item.orders?.id)
+      .map((item) => item.orders?.id)
       .filter(Boolean)
   ).size;
 
-  // Revenue is calculated from delivered items only.
   const deliveredRevenue = sellerItems
-    .filter((item: any) => item.orders?.order_status === "delivered")
-    .reduce((sum: number, item: any) => {
+    .filter((item) => item.orders?.order_status === "delivered")
+    .reduce((sum: number, item) => {
       return sum + Number(item.unit_price || 0) * Number(item.quantity || 0);
     }, 0);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
-      {/* Top welcome panel */}
       <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -128,9 +154,10 @@ export default async function SellerDashboardPage() {
             </h1>
 
             <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500 dark:text-zinc-400">
-              Welcome back, {profile.full_name || profile.email || "Seller"}.
-              Manage your products, track orders, and monitor revenue from one
-              clean dashboard.
+              Welcome back,{" "}
+              {profileRow.full_name || profileRow.email || "Seller"}. Manage
+              your products, track orders, and monitor revenue from one clean
+              dashboard.
             </p>
           </div>
 
@@ -168,7 +195,6 @@ export default async function SellerDashboardPage() {
         </div>
       </div>
 
-      {/* Stat cards */}
       <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <div className="rounded-[28px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400">
@@ -243,7 +269,6 @@ export default async function SellerDashboardPage() {
         </div>
       </div>
 
-      {/* Recent products panel */}
       <div className="mt-6 rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
         <div className="flex items-center justify-between gap-4">
           <div>
@@ -263,13 +288,13 @@ export default async function SellerDashboardPage() {
           </Link>
         </div>
 
-        {!recentProducts?.length ? (
+        {!recentProductList.length ? (
           <div className="mt-5 rounded-[24px] border border-dashed border-zinc-300 p-6 text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
             No products yet.
           </div>
         ) : (
           <div className="mt-5 space-y-3">
-            {recentProducts.map((product: any) => (
+            {recentProductList.map((product) => (
               <div
                 key={product.id}
                 className="rounded-[24px] border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900"
@@ -281,16 +306,16 @@ export default async function SellerDashboardPage() {
                         product.thumbnail_url ||
                         "/images/placeholder-product.jpg"
                       }
-                      alt={product.name}
+                      alt={product.name || "Product"}
                       className="h-16 w-16 rounded-[18px] object-cover"
                     />
 
                     <div className="min-w-0">
                       <p className="font-bold text-zinc-900 dark:text-white">
-                        {product.name}
+                        {product.name || "Unnamed product"}
                       </p>
                       <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                        {product.status} • Rs.{" "}
+                        {product.status || "draft"} • Rs.{" "}
                         {Number(product.price || 0).toLocaleString()}
                       </p>
                     </div>
