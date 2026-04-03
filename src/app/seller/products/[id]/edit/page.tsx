@@ -19,19 +19,19 @@ type SellerProductRow = {
   id: string;
   name: string;
   slug: string;
-  short_description?: string | null;
-  description?: string | null;
-  sku?: string | null;
-  thumbnail_url?: string | null;
-  category_id?: string | null;
-  price?: number | null;
-  compare_at_price?: number | null;
-  stock_quantity?: number | null;
-  status?: string | null;
-  is_featured?: boolean | null;
-  seller_id?: string | null;
-  created_at?: string | null;
-  updated_at?: string | null;
+  short_description: string | null;
+  description: string | null;
+  sku: string | null;
+  thumbnail_url: string | null;
+  category_id: string | null;
+  price: number;
+  compare_at_price: number | null;
+  stock_quantity: number;
+  status: string;
+  is_featured: boolean;
+  seller_id: string | null;
+  created_at: string | null;
+  updated_at: string | null;
 };
 
 type CategoryRow = {
@@ -133,7 +133,7 @@ export default async function SellerEditProductPage({ params }: Props) {
         ? null
         : Number(productData.compare_at_price),
     stock_quantity: Number(productData.stock_quantity || 0),
-    status: productData.status ?? "draft",
+    status: String(productData.status || "draft"),
     is_featured: Boolean(productData.is_featured),
     seller_id: productData.seller_id ?? user.id,
     created_at: productData.created_at ?? null,
@@ -183,7 +183,10 @@ export default async function SellerEditProductPage({ params }: Props) {
           </p>
         </div>
 
-        <SellerEditProductForm product={productRow} categories={categoryList} />
+        <SellerEditProductForm
+          product={productRow}
+          categories={categoryList}
+        />
       </div>
 
       <div className="mt-6 rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
