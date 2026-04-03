@@ -9,32 +9,58 @@ type Props = {
   }>;
 };
 
+type CategoryRow = {
+  id: string;
+  name?: string | null;
+  slug?: string | null;
+};
+
+type ProductRow = {
+  id: string;
+  name?: string | null;
+  slug?: string | null;
+  price?: number | null;
+  compare_at_price?: number | null;
+  thumbnail_url?: string | null;
+  short_description?: string | null;
+  description?: string | null;
+  stock_quantity?: number | null;
+  categories?: {
+    id?: string | null;
+    name?: string | null;
+    slug?: string | null;
+  } | null;
+};
+
 export default async function ShopPage({ searchParams }: Props) {
   const { q = "", category = "", sort = "newest" } = await searchParams;
 
   const supabase = await createClient();
 
-  // Load active categories for the filter sidebar.
   const { data: categories } = await supabase
-    .from("categories")
+    .from("categories" as never)
     .select("id, name, slug")
     .eq("is_active", true)
     .order("name");
 
-  // Start the product query with active products only.
+  const categoryList = ((categories as CategoryRow[] | null) ?? []).filter(
+    (cat): cat is CategoryRow => Boolean(cat?.id)
+  );
+
   let query = supabase
-    .from("products")
-    .select(`
+    .from("products" as never)
+    .select(
+      `
       *,
       categories (
         id,
         name,
         slug
       )
-    `)
+    `
+    )
     .eq("status", "active");
 
-  // Apply text search across useful product fields.
   if (q.trim()) {
     const term = q.trim();
     query = query.or(
@@ -42,12 +68,10 @@ export default async function ShopPage({ searchParams }: Props) {
     );
   }
 
-  // Apply category filter when selected.
   if (category.trim()) {
     query = query.eq("category_id", category);
   }
 
-  // Apply sorting.
   if (sort === "price_asc") {
     query = query.order("price", { ascending: true });
   } else if (sort === "price_desc") {
@@ -57,13 +81,12 @@ export default async function ShopPage({ searchParams }: Props) {
   }
 
   const { data: products } = await query;
-  const list = products ?? [];
+  const list = (products as ProductRow[] | null) ?? [];
 
-  // Convert database products into the UI shape used by ShopProductGrid.
-  const mappedProducts = list.map((product: any) => ({
+  const mappedProducts = list.map((product) => ({
     id: product.id,
-    name: product.name,
-    slug: product.slug,
+    name: product.name || "Unnamed Product",
+    slug: product.slug || "",
     price: `Rs. ${Number(product.price || 0).toLocaleString()}`,
     oldPrice: product.compare_at_price
       ? `Rs. ${Number(product.compare_at_price).toLocaleString()}`
@@ -82,7 +105,6 @@ export default async function ShopPage({ searchParams }: Props) {
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
       <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
-        {/* Filter sidebar */}
         <aside className="rounded-[28px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 lg:sticky lg:top-24 lg:h-fit">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-600 dark:text-red-400">
@@ -100,7 +122,6 @@ export default async function ShopPage({ searchParams }: Props) {
           </div>
 
           <form action="/shop" className="mt-6 space-y-4">
-            {/* Search input */}
             <div>
               <label className="mb-2 block text-sm font-medium text-zinc-900 dark:text-white">
                 Search
@@ -114,7 +135,6 @@ export default async function ShopPage({ searchParams }: Props) {
               />
             </div>
 
-            {/* Category filter */}
             <div>
               <label className="mb-2 block text-sm font-medium text-zinc-900 dark:text-white">
                 Category
@@ -125,15 +145,14 @@ export default async function ShopPage({ searchParams }: Props) {
                 className="w-full rounded-2xl border border-zinc-300 px-4 py-3 text-sm outline-none transition focus:border-red-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
               >
                 <option value="">All Categories</option>
-                {(categories ?? []).map((cat) => (
+                {categoryList.map((cat) => (
                   <option key={cat.id} value={cat.id}>
-                    {cat.name}
+                    {cat.name || "Unnamed Category"}
                   </option>
                 ))}
               </select>
             </div>
 
-            {/* Sort filter */}
             <div>
               <label className="mb-2 block text-sm font-medium text-zinc-900 dark:text-white">
                 Sort
@@ -158,9 +177,7 @@ export default async function ShopPage({ searchParams }: Props) {
           </form>
         </aside>
 
-        {/* Main content */}
         <section className="space-y-5">
-          {/* Top intro panel */}
           <div className="rounded-[28px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
             <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
               <div>
@@ -188,7 +205,6 @@ export default async function ShopPage({ searchParams }: Props) {
             </div>
           </div>
 
-          {/* Product grid */}
           <ShopProductGrid products={mappedProducts} />
         </section>
       </div>
