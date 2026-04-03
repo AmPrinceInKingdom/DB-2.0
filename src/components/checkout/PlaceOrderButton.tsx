@@ -1,8 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { placeOrderAction } from "@/app/actions/checkout-actions";
+import { useRouter } from "next/navigation";
+import { createOrderFromCartAction } from "@/app/actions/checkout-actions";
 
 type PlaceOrderButtonProps = {
   fullName: string;
@@ -19,7 +19,9 @@ type PlaceOrderButtonProps = {
   discountAmount?: number;
 };
 
-export default function PlaceOrderButton(props: PlaceOrderButtonProps) {
+export default function PlaceOrderButton({
+  paymentMethod,
+}: PlaceOrderButtonProps) {
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -28,19 +30,21 @@ export default function PlaceOrderButton(props: PlaceOrderButtonProps) {
     setMessage("");
 
     startTransition(async () => {
-      const result = await placeOrderAction(props);
+      const formData = new FormData();
 
-      if (result.error) {
+      formData.append(
+        "payment_method",
+        paymentMethod === "card" ? "cod" : paymentMethod
+      );
+
+      const result = await createOrderFromCartAction(formData);
+
+      if (result?.error) {
         setMessage(result.error);
         return;
       }
 
-      if (result.orderNumber) {
-        router.push(`/order-success?order=${result.orderNumber}`);
-        return;
-      }
-
-      setMessage(result.success || "Order placed.");
+      router.push("/orders");
     });
   };
 
