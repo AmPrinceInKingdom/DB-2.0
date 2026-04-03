@@ -2,15 +2,37 @@ import Link from "next/link";
 import { PackageSearch } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 
+type ProfileRow = {
+  role?: string | null;
+};
+
+type SellerOrderListItemRow = {
+  id: string;
+  quantity?: number | null;
+  unit_price?: number | null;
+  products?: {
+    id?: string | null;
+    name?: string | null;
+    thumbnail_url?: string | null;
+    seller_id?: string | null;
+  } | null;
+  orders?: {
+    id?: string | null;
+    order_number?: string | null;
+    order_status?: string | null;
+    payment_status?: string | null;
+    created_at?: string | null;
+    total_amount?: number | null;
+  } | null;
+};
+
 export default async function SellerOrdersPage() {
   const supabase = await createClient();
 
-  // Load the authenticated user.
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Stop here if the user is not logged in.
   if (!user) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-10">
@@ -21,14 +43,15 @@ export default async function SellerOrdersPage() {
     );
   }
 
-  // Confirm seller access.
   const { data: profile } = await supabase
-    .from("profiles")
+    .from("profiles" as never)
     .select("role")
     .eq("id", user.id)
     .single();
 
-  if (!profile || profile.role !== "seller") {
+  const profileRow = profile as ProfileRow | null;
+
+  if (!profileRow || profileRow.role !== "seller") {
     return (
       <div className="mx-auto max-w-6xl px-4 py-10">
         <div className="rounded-[30px] border border-dashed border-zinc-300 bg-white p-10 text-center text-zinc-600 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
@@ -38,10 +61,10 @@ export default async function SellerOrdersPage() {
     );
   }
 
-  // Load all order items with product and parent order details.
   const { data: items } = await supabase
-    .from("order_items")
-    .select(`
+    .from("order_items" as never)
+    .select(
+      `
       *,
       products (
         id,
@@ -57,11 +80,13 @@ export default async function SellerOrdersPage() {
         created_at,
         total_amount
       )
-    `);
+    `
+    );
 
-  // Keep only the order items that belong to the current seller.
   const list =
-    items?.filter((item: any) => item.products?.seller_id === user.id) ?? [];
+    ((items as SellerOrderListItemRow[] | null) ?? []).filter(
+      (item) => item.products?.seller_id === user.id
+    );
 
   function getOrderStatusClasses(status: string) {
     if (status === "delivered") {
@@ -101,7 +126,6 @@ export default async function SellerOrdersPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
-      {/* Page header */}
       <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-600 dark:text-red-400">
           Seller activity
@@ -117,7 +141,6 @@ export default async function SellerOrdersPage() {
         </p>
       </div>
 
-      {/* Empty state */}
       {list.length === 0 ? (
         <div className="mt-6 rounded-[30px] border border-dashed border-zinc-300 bg-white p-10 text-center text-zinc-500 shadow-sm dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-400">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-900">
@@ -135,7 +158,7 @@ export default async function SellerOrdersPage() {
         </div>
       ) : (
         <div className="mt-6 space-y-4">
-          {list.map((item: any) => {
+          {list.map((item) => {
             const lineTotal =
               Number(item.unit_price || 0) * Number(item.quantity || 0);
 
@@ -146,7 +169,6 @@ export default async function SellerOrdersPage() {
               >
                 <div className="p-5 md:p-6">
                   <div className="grid gap-6 xl:grid-cols-[1fr_220px]">
-                    {/* Left side */}
                     <div className="flex flex-col gap-4 sm:flex-row">
                       <img
                         src={
@@ -167,7 +189,7 @@ export default async function SellerOrdersPage() {
                         </p>
 
                         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                          Quantity: {item.quantity}
+                          Quantity: {item.quantity || 0}
                         </p>
 
                         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
@@ -197,7 +219,6 @@ export default async function SellerOrdersPage() {
                       </div>
                     </div>
 
-                    {/* Right side */}
                     <div className="flex flex-col gap-3 xl:items-end xl:text-right">
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">
@@ -218,7 +239,7 @@ export default async function SellerOrdersPage() {
                       </div>
 
                       <Link
-                        href={`/seller/orders/${item.orders?.id}`}
+                        href={`/seller/orders/${item.orders?.id || ""}`}
                         className="inline-flex h-10 items-center justify-center rounded-full border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
                       >
                         View
@@ -227,7 +248,6 @@ export default async function SellerOrdersPage() {
                   </div>
                 </div>
 
-                {/* Bottom helper bar */}
                 <div className="border-t border-zinc-200 bg-zinc-50 px-5 py-3 text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-400 md:px-6">
                   This entry shows how one of your products appears inside a
                   customer order.
