@@ -1,14 +1,22 @@
 import { redirect } from "next/navigation";
 import { getProfile } from "@/lib/auth/get-profile";
 
-export async function requireRole(roles: Array<"customer" | "seller" | "admin">) {
-  const profile = await getProfile();
+type Role = "customer" | "seller" | "admin";
+
+type Profile = {
+  role?: Role | null;
+};
+
+export async function requireRole(roles: Role[]) {
+  const profile = (await getProfile()) as Profile | null;
 
   if (!profile) {
     redirect("/login");
   }
 
-  if (!roles.includes(profile.role)) {
+  const role = profile.role;
+
+  if (!role || !roles.includes(role)) {
     redirect("/");
   }
 
