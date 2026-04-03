@@ -29,5 +29,5 @@ export async function createNotification({
 
   await supabase
     .from("notifications" as never)
-    .insert(payload);
+    .insert(payload as never);
 }
