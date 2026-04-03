@@ -2,21 +2,26 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import SectionShell from "@/components/shared/SectionShell";
 
-/**
- * Homepage featured categories section.
- * Uses real categories from the database and keeps the UI simple and clean.
- */
+type CategoryRow = {
+  id: string;
+  name: string;
+  slug?: string | null;
+};
+
 export default async function FeaturedCategories() {
   const supabase = await createClient();
 
   const { data: categories, error } = await supabase
-    .from("categories")
+    .from("categories" as never)
     .select("id, name, slug")
     .eq("is_active", true)
     .order("name", { ascending: true })
     .limit(8);
 
-  const list = categories ?? [];
+  const list = ((categories as CategoryRow[] | null) ?? []).filter(
+    (category): category is CategoryRow =>
+      Boolean(category?.id) && Boolean(category?.name)
+  );
 
   return (
     <SectionShell
