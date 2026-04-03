@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Scale } from "lucide-react";
-import { useCompareStore } from "@/store/compare-store";
+import { useCompareStore } from "@/stores/compare-store";
 
 export default function CompareBar() {
   const items = useCompareStore((state) => state.items);
@@ -23,7 +23,8 @@ export default function CompareBar() {
 
           <div>
             <p className="text-sm font-semibold text-zinc-900 dark:text-white">
-              {items.length} product{items.length > 1 ? "s" : ""} selected for compare
+              {items.length} product{items.length > 1 ? "s" : ""} selected for
+              compare
             </p>
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
               Compare up to {maxItems} products side by side
