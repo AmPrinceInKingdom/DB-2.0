@@ -2,7 +2,6 @@ import Link from "next/link";
 import { createOrderFromCartAction } from "@/app/actions/checkout-actions";
 import { createClient } from "@/lib/supabase/server";
 import { getCart } from "@/lib/cart/getCart";
-import CouponBox from "@/components/checkout/CouponBox";
 
 type CartItemRow = {
   id: string;
@@ -251,6 +250,11 @@ export default async function CheckoutPage() {
                 <span>Subtotal</span>
                 <span>Rs. {subtotal.toLocaleString()}</span>
               </div>
+
+              <div className="flex items-center justify-between border-t border-zinc-200 pt-3 text-base font-bold text-zinc-900 dark:border-zinc-800 dark:text-white">
+                <span>Total</span>
+                <span>Rs. {subtotal.toLocaleString()}</span>
+              </div>
             </div>
 
             <form action={submitOrderAction} className="mt-6 space-y-5">
@@ -293,7 +297,10 @@ export default async function CheckoutPage() {
                 </label>
               </div>
 
-              <CouponBox subtotal={subtotal} />
+              <div className="rounded-[22px] border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+                Coupon support will be re-enabled after the checkout component
+                props are aligned.
+              </div>
 
               <button
                 type="submit"
