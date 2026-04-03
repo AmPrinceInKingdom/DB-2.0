@@ -1,6 +1,28 @@
 import { createClient } from "@/lib/supabase/server";
 
-export async function getCurrentUserWithRole() {
+type UserRole = "admin" | "seller" | "customer" | null;
+
+type ProfileRow = {
+  role?: string | null;
+};
+
+type ProductRow = {
+  seller_id?: string | null;
+};
+
+type OrderItemRow = {
+  products?: {
+    seller_id?: string | null;
+  } | null;
+};
+
+type OwnershipResult = {
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  user: any | null;
+  role: UserRole;
+};
+
+export async function getCurrentUserWithRole(): Promise<OwnershipResult> {
   const supabase = await createClient();
 
   const {
@@ -11,16 +33,18 @@ export async function getCurrentUserWithRole() {
     return { supabase, user: null, role: null };
   }
 
-  const { data: profile } = await supabase
+  const { data } = await supabase
     .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single();
 
+  const profile = (data ?? null) as ProfileRow | null;
+
   return {
     supabase,
     user,
-    role: profile?.role ?? null,
+    role: (profile?.role as UserRole) ?? null,
   };
 }
 
@@ -39,12 +63,13 @@ export async function canManageProduct(productId: string) {
     return { supabase, allowed: false, user, role };
   }
 
-  const { data: product } = await supabase
+  const { data } = await supabase
     .from("products")
     .select("id, seller_id")
     .eq("id", productId)
     .single();
 
+  const product = (data ?? null) as ProductRow | null;
   const allowed = !!product && product.seller_id === user.id;
 
   return { supabase, allowed, user, role };
@@ -65,18 +90,21 @@ export async function canViewOrderForSeller(orderId: string) {
     return { supabase, allowed: false, user, role };
   }
 
-  const { data: items } = await supabase
+  const { data } = await supabase
     .from("order_items")
-    .select(`
+    .select(
+      `
       id,
       products (
         seller_id
       )
-    `)
+    `
+    )
     .eq("order_id", orderId);
 
-  const allowed =
-    items?.some((item: any) => item.products?.seller_id === user.id) ?? false;
+  const items = (data ?? []) as OrderItemRow[];
+
+  const allowed = items.some((item) => item.products?.seller_id === user.id);
 
   return { supabase, allowed, user, role };
 }
