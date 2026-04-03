@@ -9,7 +9,9 @@ export default function DeleteAddressButton({
 }) {
   return (
     <form
-      action={deleteAddressAction}
+      action={async (formData: FormData) => {
+        await deleteAddressAction(formData);
+      }}
       className="w-full"
     >
       <input type="hidden" name="address_id" value={addressId} />
