@@ -34,6 +34,11 @@ export default async function CheckoutPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  async function submitOrderAction(formData: FormData) {
+    "use server";
+    await createOrderFromCartAction(formData);
+  }
+
   if (!user) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-10">
@@ -248,7 +253,7 @@ export default async function CheckoutPage() {
               </div>
             </div>
 
-            <form action={createOrderFromCartAction} className="mt-6 space-y-5">
+            <form action={submitOrderAction} className="mt-6 space-y-5">
               <div className="space-y-3">
                 <label className="flex cursor-pointer items-start gap-3 rounded-[22px] border border-zinc-200 bg-zinc-50 p-4 transition hover:border-red-300 dark:border-zinc-800 dark:bg-zinc-900">
                   <input
