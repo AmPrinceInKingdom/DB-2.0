@@ -48,6 +48,19 @@ export default async function AdminSettingsPage() {
     );
   }
 
+  const settingsForForm = {
+    id: settingsRow.id,
+    site_name: settingsRow.site_name || "",
+    site_tagline: settingsRow.site_tagline || "",
+    logo_url: settingsRow.logo_url || "",
+    currency_code: settingsRow.currency_code || "LKR",
+    currency_symbol: settingsRow.currency_symbol || "Rs.",
+    shipping_fee: Number(settingsRow.shipping_fee || 0),
+    free_shipping_threshold: Number(settingsRow.free_shipping_threshold || 0),
+    support_email: settingsRow.support_email || "",
+    support_phone: settingsRow.support_phone || "",
+  };
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 md:px-6 md:py-8">
       <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
@@ -81,7 +94,7 @@ export default async function AdminSettingsPage() {
           </p>
         </div>
 
-        <SiteSettingsForm settings={settingsRow} />
+        <SiteSettingsForm settings={settingsForForm} />
       </div>
     </div>
   );
