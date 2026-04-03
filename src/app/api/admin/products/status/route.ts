@@ -3,6 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 
 const allowedStatuses = ["draft", "active", "archived"] as const;
 
+type ProfileRow = {
+  role?: string | null;
+};
+
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
@@ -38,12 +42,14 @@ export async function POST(request: Request) {
     }
 
     const { data: profile, error: profileError } = await supabase
-      .from("profiles")
+      .from("profiles" as never)
       .select("role")
       .eq("id", user.id)
       .single();
 
-    if (profileError || !profile || profile.role !== "admin") {
+    const profileRow = profile as ProfileRow | null;
+
+    if (profileError || !profileRow || profileRow.role !== "admin") {
       return NextResponse.json(
         { error: "Admin access required." },
         { status: 403 }
@@ -51,8 +57,8 @@ export async function POST(request: Request) {
     }
 
     const { data, error } = await supabase
-      .from("products")
-      .update({ status })
+      .from("products" as never)
+      .update({ status } as never)
       .eq("id", productId)
       .select("id, status")
       .single();
