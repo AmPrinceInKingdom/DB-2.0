@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+type ProfileRow = {
+  role?: string | null;
+};
+
 function slugifyFileName(name: string) {
   return name
     .toLowerCase()
@@ -25,17 +29,18 @@ export async function POST(request: Request) {
     }
 
     const { data: profile, error: profileError } = await supabase
-      .from("profiles")
+      .from("profiles" as never)
       .select("role")
       .eq("id", user.id)
       .single();
 
+    const profileRow = profile as ProfileRow | null;
     const allowedRoles = ["admin", "seller"];
 
     if (
       profileError ||
-      !profile ||
-      !allowedRoles.includes(profile.role)
+      !profileRow ||
+      !allowedRoles.includes(profileRow.role || "")
     ) {
       return NextResponse.json(
         { error: "Admin or seller access required." },
