@@ -8,7 +8,11 @@ export default function DeleteCategoryButton({
   categoryId: string;
 }) {
   return (
-    <form action={deleteCategoryAction}>
+    <form
+      action={async (formData: FormData) => {
+        await deleteCategoryAction(formData);
+      }}
+    >
       <input type="hidden" name="category_id" value={categoryId} />
 
       <button
