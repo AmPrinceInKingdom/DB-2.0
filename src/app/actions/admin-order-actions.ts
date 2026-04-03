@@ -16,7 +16,9 @@ type AllowedOrderStatus = (typeof allowedStatuses)[number];
 
 export async function updateOrderStatusAction(formData: FormData) {
   const orderId = String(formData.get("order_id") || "");
-  const nextStatus = String(formData.get("order_status") || "") as AllowedOrderStatus;
+  const nextStatus = String(
+    formData.get("order_status") || "",
+  ) as AllowedOrderStatus;
 
   if (!orderId) {
     return { error: "Order ID is required." };
@@ -37,20 +39,22 @@ export async function updateOrderStatusAction(formData: FormData) {
   }
 
   const { data: profile } = await supabase
-    .from("profiles")
+    .from("profiles" as never)
     .select("role")
     .eq("id", user.id)
     .single();
 
-  if (!profile || profile.role !== "admin") {
+  const userProfile = profile as { role?: string } | null;
+
+  if (!userProfile || userProfile.role !== "admin") {
     return { error: "Admin access required." };
   }
 
   const { error } = await supabase
-    .from("orders")
+    .from("orders" as never)
     .update({
       order_status: nextStatus,
-    })
+    } as never)
     .eq("id", orderId);
 
   if (error) {
