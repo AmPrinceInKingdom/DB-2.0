@@ -9,7 +9,9 @@ export default function SetDefaultAddressButton({
 }) {
   return (
     <form
-      action={setDefaultAddressAction}
+      action={async (formData: FormData) => {
+        await setDefaultAddressAction(formData);
+      }}
       className="w-full"
     >
       <input type="hidden" name="address_id" value={addressId} />
