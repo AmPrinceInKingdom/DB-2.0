@@ -17,7 +17,18 @@ type AdminProfile = {
 
 type ProductRow = {
   id: string;
-  thumbnail_url: string | null;
+  name?: string | null;
+  slug?: string | null;
+  short_description?: string | null;
+  description?: string | null;
+  price?: number | null;
+  compare_at_price?: number | null;
+  stock_quantity?: number | null;
+  category_id?: string | null;
+  status?: string | null;
+  is_featured?: boolean | null;
+  thumbnail_url?: string | null;
+  sku?: string | null;
   [key: string]: any;
 };
 
@@ -96,6 +107,22 @@ export default async function AdminEditProductPage({ params }: Props) {
     );
   }
 
+  const productForForm = {
+    id: productRow.id,
+    name: productRow.name || "",
+    slug: productRow.slug || "",
+    short_description: productRow.short_description || "",
+    description: productRow.description || "",
+    sku: productRow.sku || "",
+    price: Number(productRow.price || 0),
+    compare_at_price: Number(productRow.compare_at_price || 0),
+    stock_quantity: Number(productRow.stock_quantity || 0),
+    category_id: productRow.category_id || "",
+    status: productRow.status || "draft",
+    is_featured: Boolean(productRow.is_featured),
+    thumbnail_url: productRow.thumbnail_url || "",
+  };
+
   const totalImages = (productRow.thumbnail_url ? 1 : 0) + galleryImages.length;
 
   return (
@@ -140,7 +167,7 @@ export default async function AdminEditProductPage({ params }: Props) {
         </div>
 
         <AdminEditProductForm
-          product={productRow}
+          product={productForForm}
           categories={categoryList}
         />
       </div>
