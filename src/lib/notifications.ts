@@ -1,5 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 
+type NotificationInsert = {
+  user_id: string;
+  title: string;
+  message?: string | null;
+  link?: string | null;
+};
+
 export async function createNotification({
   userId,
   title,
@@ -13,10 +20,14 @@ export async function createNotification({
 }) {
   const supabase = await createClient();
 
-  await supabase.from("notifications").insert({
+  const payload: NotificationInsert = {
     user_id: userId,
     title,
-    message,
-    link,
-  });
+    message: message ?? null,
+    link: link ?? null,
+  };
+
+  await supabase
+    .from("notifications" as never)
+    .insert(payload);
 }
