@@ -8,16 +8,49 @@ type Props = {
   }>;
 };
 
+type OrderRow = {
+  id: string;
+  order_number?: string | null;
+  order_status?: string | null;
+  payment_status?: string | null;
+  payment_method?: string | null;
+  total_amount?: number | null;
+  subtotal_amount?: number | null;
+  discount_amount?: number | null;
+  shipping_amount?: number | null;
+  cancelled_at?: string | null;
+  cancel_reason?: string | null;
+  courier_name?: string | null;
+  tracking_number?: string | null;
+  shipped_at?: string | null;
+  delivered_at?: string | null;
+  coupon_code?: string | null;
+  stock_restored?: boolean | null;
+};
+
+type OrderItemRow = {
+  id: string;
+  product_image_url?: string | null;
+  product_name?: string | null;
+  quantity?: number | null;
+  unit_price?: number | null;
+};
+
+type PaymentProofRow = {
+  id: string;
+  verification_status?: string | null;
+  note?: string | null;
+  image_url?: string | null;
+};
+
 export default async function OrderDetailsPage({ params }: Props) {
   const { orderNumber } = await params;
   const supabase = await createClient();
 
-  // Load the authenticated user.
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Stop here for guests.
   if (!user) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-10">
@@ -28,16 +61,16 @@ export default async function OrderDetailsPage({ params }: Props) {
     );
   }
 
-  // Load the selected order for the current user only.
   const { data: order } = await supabase
-    .from("orders")
+    .from("orders" as never)
     .select("*")
     .eq("user_id", user.id)
     .eq("order_number", orderNumber)
     .single();
 
-  // Show a clean empty state if the order does not exist.
-  if (!order) {
+  const orderRow = order as OrderRow | null;
+
+  if (!orderRow) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-10">
         <div className="rounded-[30px] border border-dashed border-zinc-300 bg-white p-10 text-center text-zinc-600 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
@@ -47,22 +80,21 @@ export default async function OrderDetailsPage({ params }: Props) {
     );
   }
 
-  // Load order items and uploaded payment proofs together.
   const [{ data: items }, { data: paymentProofs }] = await Promise.all([
     supabase
-      .from("order_items")
+      .from("order_items" as never)
       .select("*")
-      .eq("order_id", order.id)
+      .eq("order_id", orderRow.id)
       .order("created_at", { ascending: true }),
     supabase
-      .from("payment_proofs")
+      .from("payment_proofs" as never)
       .select("*")
-      .eq("order_id", order.id)
+      .eq("order_id", orderRow.id)
       .order("uploaded_at", { ascending: false }),
   ]);
 
-  const orderItems = items ?? [];
-  const proofs = paymentProofs ?? [];
+  const orderItems = (items as OrderItemRow[] | null) ?? [];
+  const proofs = (paymentProofs as PaymentProofRow[] | null) ?? [];
 
   function getOrderStatusClasses(status: string) {
     if (status === "delivered") {
@@ -102,14 +134,13 @@ export default async function OrderDetailsPage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
-      {/* Top page header */}
       <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-600 dark:text-red-400">
           Order details
         </p>
 
         <h1 className="mt-2 text-2xl font-bold text-zinc-900 dark:text-white md:text-3xl">
-          {order.order_number}
+          {orderRow.order_number || "-"}
         </h1>
 
         <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
@@ -119,9 +150,7 @@ export default async function OrderDetailsPage({ params }: Props) {
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_380px]">
-        {/* Left side */}
         <div className="space-y-6">
-          {/* Overview cards */}
           <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <div className="rounded-[22px] border border-zinc-200 p-4 dark:border-zinc-800">
@@ -131,10 +160,10 @@ export default async function OrderDetailsPage({ params }: Props) {
                 <div className="mt-3">
                   <span
                     className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold capitalize ${getOrderStatusClasses(
-                      String(order.order_status || "")
+                      String(orderRow.order_status || "")
                     )}`}
                   >
-                    {order.order_status || "pending"}
+                    {orderRow.order_status || "pending"}
                   </span>
                 </div>
               </div>
@@ -146,10 +175,10 @@ export default async function OrderDetailsPage({ params }: Props) {
                 <div className="mt-3">
                   <span
                     className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold capitalize ${getPaymentStatusClasses(
-                      String(order.payment_status || "")
+                      String(orderRow.payment_status || "")
                     )}`}
                   >
-                    {order.payment_status || "pending"}
+                    {orderRow.payment_status || "pending"}
                   </span>
                 </div>
               </div>
@@ -159,7 +188,7 @@ export default async function OrderDetailsPage({ params }: Props) {
                   Payment Method
                 </p>
                 <p className="mt-2 text-sm font-semibold capitalize text-zinc-900 dark:text-white">
-                  {order.payment_method}
+                  {orderRow.payment_method || "-"}
                 </p>
               </div>
 
@@ -168,7 +197,7 @@ export default async function OrderDetailsPage({ params }: Props) {
                   Total
                 </p>
                 <p className="mt-2 text-lg font-bold text-zinc-900 dark:text-white">
-                  Rs. {Number(order.total_amount || 0).toLocaleString()}
+                  Rs. {Number(orderRow.total_amount || 0).toLocaleString()}
                 </p>
               </div>
             </div>
@@ -179,7 +208,7 @@ export default async function OrderDetailsPage({ params }: Props) {
                   Subtotal
                 </p>
                 <p className="mt-2 text-sm font-semibold text-zinc-900 dark:text-white">
-                  Rs. {Number(order.subtotal_amount || 0).toLocaleString()}
+                  Rs. {Number(orderRow.subtotal_amount || 0).toLocaleString()}
                 </p>
               </div>
 
@@ -188,7 +217,7 @@ export default async function OrderDetailsPage({ params }: Props) {
                   Discount
                 </p>
                 <p className="mt-2 text-sm font-semibold text-zinc-900 dark:text-white">
-                  Rs. {Number(order.discount_amount || 0).toLocaleString()}
+                  Rs. {Number(orderRow.discount_amount || 0).toLocaleString()}
                 </p>
               </div>
 
@@ -197,14 +226,13 @@ export default async function OrderDetailsPage({ params }: Props) {
                   Shipping
                 </p>
                 <p className="mt-2 text-sm font-semibold text-zinc-900 dark:text-white">
-                  Rs. {Number(order.shipping_amount || 0).toLocaleString()}
+                  Rs. {Number(orderRow.shipping_amount || 0).toLocaleString()}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Cancel state block */}
-          {order.order_status === "cancelled" ? (
+          {orderRow.order_status === "cancelled" ? (
             <div className="rounded-[30px] border border-red-200 bg-red-50 p-5 shadow-sm dark:border-red-900/40 dark:bg-red-950/20 md:p-6">
               <h2 className="text-lg font-bold text-red-700 dark:text-red-300">
                 This order has been cancelled
@@ -213,16 +241,15 @@ export default async function OrderDetailsPage({ params }: Props) {
               <div className="mt-4 space-y-2 text-sm text-red-700 dark:text-red-300">
                 <p>
                   Cancelled at:{" "}
-                  {order.cancelled_at
-                    ? new Date(order.cancelled_at).toLocaleString()
+                  {orderRow.cancelled_at
+                    ? new Date(orderRow.cancelled_at).toLocaleString()
                     : "-"}
                 </p>
-                <p>Reason: {order.cancel_reason || "-"}</p>
+                <p>Reason: {orderRow.cancel_reason || "-"}</p>
               </div>
             </div>
           ) : null}
 
-          {/* Shipping info */}
           <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-600 dark:text-red-400">
               Shipping
@@ -238,7 +265,7 @@ export default async function OrderDetailsPage({ params }: Props) {
                   Courier
                 </p>
                 <p className="mt-2 text-sm font-semibold text-zinc-900 dark:text-white">
-                  {order.courier_name || "-"}
+                  {orderRow.courier_name || "-"}
                 </p>
               </div>
 
@@ -247,7 +274,7 @@ export default async function OrderDetailsPage({ params }: Props) {
                   Tracking Number
                 </p>
                 <p className="mt-2 text-sm font-semibold text-zinc-900 dark:text-white">
-                  {order.tracking_number || "-"}
+                  {orderRow.tracking_number || "-"}
                 </p>
               </div>
 
@@ -256,8 +283,8 @@ export default async function OrderDetailsPage({ params }: Props) {
                   Shipped At
                 </p>
                 <p className="mt-2 text-sm font-semibold text-zinc-900 dark:text-white">
-                  {order.shipped_at
-                    ? new Date(order.shipped_at).toLocaleString()
+                  {orderRow.shipped_at
+                    ? new Date(orderRow.shipped_at).toLocaleString()
                     : "-"}
                 </p>
               </div>
@@ -267,16 +294,15 @@ export default async function OrderDetailsPage({ params }: Props) {
                   Delivered At
                 </p>
                 <p className="mt-2 text-sm font-semibold text-zinc-900 dark:text-white">
-                  {order.delivered_at
-                    ? new Date(order.delivered_at).toLocaleString()
+                  {orderRow.delivered_at
+                    ? new Date(orderRow.delivered_at).toLocaleString()
                     : "-"}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Bank transfer proof section */}
-          {order.payment_method === "bank_transfer" ? (
+          {orderRow.payment_method === "bank_transfer" ? (
             <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
               <h2 className="text-xl font-bold text-zinc-900 dark:text-white">
                 Bank Transfer Proof
@@ -302,18 +328,18 @@ export default async function OrderDetailsPage({ params }: Props) {
               </div>
 
               <div className="mt-5">
-                <UploadPaymentProofForm orderId={order.id} />
+                <UploadPaymentProofForm orderId={orderRow.id} />
               </div>
 
               {proofs.length > 0 ? (
                 <div className="mt-6 space-y-4">
-                  {proofs.map((proof: any) => (
+                  {proofs.map((proof) => (
                     <div
                       key={proof.id}
                       className="rounded-[24px] border border-zinc-200 p-4 dark:border-zinc-800"
                     >
                       <p className="text-sm font-semibold capitalize text-zinc-900 dark:text-white">
-                        Status: {proof.verification_status}
+                        Status: {proof.verification_status || "pending"}
                       </p>
 
                       {proof.note ? (
@@ -323,7 +349,7 @@ export default async function OrderDetailsPage({ params }: Props) {
                       ) : null}
 
                       <a
-                        href={proof.image_url}
+                        href={proof.image_url || "#"}
                         target="_blank"
                         rel="noreferrer"
                         className="mt-3 inline-flex h-10 items-center justify-center rounded-full border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
@@ -337,7 +363,6 @@ export default async function OrderDetailsPage({ params }: Props) {
             </div>
           ) : null}
 
-          {/* Ordered items */}
           <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-600 dark:text-red-400">
               Purchased items
@@ -348,23 +373,23 @@ export default async function OrderDetailsPage({ params }: Props) {
             </h2>
 
             <div className="mt-5 space-y-4">
-              {orderItems.map((item: any) => (
+              {orderItems.map((item) => (
                 <div
                   key={item.id}
                   className="flex items-center gap-4 rounded-[24px] border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900"
                 >
                   <img
                     src={item.product_image_url || "/images/placeholder-product.jpg"}
-                    alt={item.product_name}
+                    alt={item.product_name || "Product"}
                     className="h-20 w-20 rounded-[18px] object-cover"
                   />
 
                   <div className="min-w-0 flex-1">
                     <h2 className="text-sm font-bold text-zinc-900 dark:text-white sm:text-base">
-                      {item.product_name}
+                      {item.product_name || "Unnamed product"}
                     </h2>
                     <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                      Quantity: {item.quantity}
+                      Quantity: {item.quantity || 0}
                     </p>
                     <p className="mt-2 text-sm font-bold text-zinc-900 dark:text-white">
                       Rs. {Number(item.unit_price || 0).toLocaleString()}
@@ -376,14 +401,11 @@ export default async function OrderDetailsPage({ params }: Props) {
           </div>
         </div>
 
-        {/* Right side */}
         <div className="space-y-6">
-          {/* Action panel */}
-          {["pending", "processing"].includes(order.order_status || "") ? (
-            <CancelOrderButton orderId={order.id} />
+          {["pending", "processing"].includes(orderRow.order_status || "") ? (
+            <CancelOrderButton orderId={orderRow.id} />
           ) : null}
 
-          {/* Order helper panel */}
           <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
             <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
               Order Summary
@@ -393,32 +415,31 @@ export default async function OrderDetailsPage({ params }: Props) {
               <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400">
                 <span>Order Number</span>
                 <span className="font-semibold text-zinc-900 dark:text-white">
-                  {order.order_number}
+                  {orderRow.order_number || "-"}
                 </span>
               </div>
 
               <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400">
                 <span>Coupon</span>
                 <span className="font-semibold text-zinc-900 dark:text-white">
-                  {order.coupon_code || "-"}
+                  {orderRow.coupon_code || "-"}
                 </span>
               </div>
 
               <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400">
                 <span>Stock Restored</span>
                 <span className="font-semibold text-zinc-900 dark:text-white">
-                  {order.stock_restored ? "Yes" : "No"}
+                  {orderRow.stock_restored ? "Yes" : "No"}
                 </span>
               </div>
 
               <div className="flex items-center justify-between border-t border-zinc-200 pt-3 text-base font-bold text-zinc-900 dark:border-zinc-800 dark:text-white">
                 <span>Final Total</span>
-                <span>Rs. {Number(order.total_amount || 0).toLocaleString()}</span>
+                <span>Rs. {Number(orderRow.total_amount || 0).toLocaleString()}</span>
               </div>
             </div>
           </div>
 
-          {/* Helper note */}
           <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
             <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
               Need help?
