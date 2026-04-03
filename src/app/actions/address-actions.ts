@@ -42,7 +42,7 @@ export async function createAddressAction(formData: FormData) {
   if (isDefault) {
     await supabase
       .from("addresses")
-      .update({ is_default: false })
+      .update({ is_default: false } as any)
       .eq("user_id", user.id);
   }
 
@@ -61,7 +61,7 @@ export async function createAddressAction(formData: FormData) {
       country,
       address_type: addressType,
       is_default: isDefault,
-    });
+    } as any);
 
   if (error) {
     return { error: error.message };
@@ -122,7 +122,7 @@ export async function updateAddressAction(formData: FormData) {
   if (isDefault) {
     await supabase
       .from("addresses")
-      .update({ is_default: false })
+      .update({ is_default: false } as any)
       .eq("user_id", user.id);
   }
 
@@ -140,7 +140,7 @@ export async function updateAddressAction(formData: FormData) {
       country,
       address_type: addressType,
       is_default: isDefault,
-    })
+    } as any)
     .eq("id", addressId);
 
   if (error) {
@@ -215,12 +215,12 @@ export async function setDefaultAddressAction(formData: FormData) {
 
   await supabase
     .from("addresses")
-    .update({ is_default: false })
+    .update({ is_default: false } as any)
     .eq("user_id", user.id);
 
   const { error } = await supabase
     .from("addresses")
-    .update({ is_default: true })
+    .update({ is_default: true } as any)
     .eq("id", addressId)
     .eq("user_id", user.id);
 
