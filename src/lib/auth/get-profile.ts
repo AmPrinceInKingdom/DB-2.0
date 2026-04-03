@@ -1,6 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 
-export async function getProfile() {
+export type UserProfile = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  role: "admin" | "seller" | "user" | null;
+  phone: string | null;
+};
+
+export async function getProfile(): Promise<UserProfile | null> {
   const supabase = await createClient();
 
   const {
@@ -12,11 +20,11 @@ export async function getProfile() {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("*")
+    .select("id, full_name, email, role, phone")
     .eq("id", user.id)
     .single();
 
-  if (error) return null;
+  if (error || !data) return null;
 
-  return data;
+  return data as UserProfile;
 }
