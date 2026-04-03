@@ -1,5 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 
+type ProductStockRow = {
+  stock_quantity?: number | null;
+  status?: string | null;
+};
+
 export async function checkProductStock(
   productId: string,
   quantity: number
@@ -7,26 +12,28 @@ export async function checkProductStock(
   const supabase = await createClient();
 
   const { data: product, error } = await supabase
-    .from("products")
+    .from("products" as never)
     .select("stock_quantity, status")
     .eq("id", productId)
     .single();
 
-  if (error || !product) {
+  const productRow = product as ProductStockRow | null;
+
+  if (error || !productRow) {
     return {
       ok: false,
       error: "Product not found",
     };
   }
 
-  if (product.status !== "active") {
+  if (productRow.status !== "active") {
     return {
       ok: false,
       error: "Product not available",
     };
   }
 
-  if (product.stock_quantity < quantity) {
+  if (Number(productRow.stock_quantity || 0) < quantity) {
     return {
       ok: false,
       error: "Not enough stock available",
@@ -43,19 +50,21 @@ export async function reduceProductStock(
   const supabase = await createClient();
 
   const { data: product } = await supabase
-    .from("products")
+    .from("products" as never)
     .select("stock_quantity")
     .eq("id", productId)
     .single();
 
-  if (!product) return;
+  const productRow = product as ProductStockRow | null;
 
-  const newStock = Math.max(product.stock_quantity - quantity, 0);
+  if (!productRow) return;
+
+  const newStock = Math.max(Number(productRow.stock_quantity || 0) - quantity, 0);
 
   await supabase
-    .from("products")
+    .from("products" as never)
     .update({
       stock_quantity: newStock,
-    })
+    } as never)
     .eq("id", productId);
 }
