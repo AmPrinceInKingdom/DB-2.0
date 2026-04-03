@@ -2,15 +2,22 @@ import { PlusCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import SellerAddProductForm from "@/components/seller/SellerAddProductForm";
 
+type ProfileRow = {
+  role?: string | null;
+};
+
+type CategoryRow = {
+  id: string;
+  name: string;
+};
+
 export default async function SellerNewProductPage() {
   const supabase = await createClient();
 
-  // Load the authenticated user.
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Stop here if the user is not logged in.
   if (!user) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-10">
@@ -21,14 +28,15 @@ export default async function SellerNewProductPage() {
     );
   }
 
-  // Confirm seller access.
   const { data: profile } = await supabase
-    .from("profiles")
+    .from("profiles" as never)
     .select("role")
     .eq("id", user.id)
     .single();
 
-  if (!profile || profile.role !== "seller") {
+  const profileRow = profile as ProfileRow | null;
+
+  if (!profileRow || profileRow.role !== "seller") {
     return (
       <div className="mx-auto max-w-6xl px-4 py-10">
         <div className="rounded-[30px] border border-dashed border-zinc-300 bg-white p-10 text-center text-zinc-600 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
@@ -38,16 +46,19 @@ export default async function SellerNewProductPage() {
     );
   }
 
-  // Load active categories for the seller add product form.
   const { data: categories } = await supabase
-    .from("categories")
+    .from("categories" as never)
     .select("id, name")
     .eq("is_active", true)
     .order("sort_order", { ascending: true });
 
+  const categoryList = ((categories as CategoryRow[] | null) ?? []).filter(
+    (category): category is CategoryRow =>
+      Boolean(category?.id) && Boolean(category?.name)
+  );
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 md:px-6 md:py-8">
-      {/* Page header */}
       <div className="rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
         <div className="flex items-start gap-4">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400">
@@ -71,7 +82,6 @@ export default async function SellerNewProductPage() {
         </div>
       </div>
 
-      {/* Form panel */}
       <div className="mt-6 rounded-[30px] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-6">
         <div className="mb-5">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-600 dark:text-red-400">
@@ -88,7 +98,7 @@ export default async function SellerNewProductPage() {
           </p>
         </div>
 
-        <SellerAddProductForm categories={categories ?? []} />
+        <SellerAddProductForm categories={categoryList} />
       </div>
     </div>
   );
