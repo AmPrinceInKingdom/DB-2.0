@@ -37,6 +37,7 @@ type ProductReviewRow = {
   rating?: number | null;
   comment?: string | null;
   created_at?: string | null;
+  is_verified_purchase?: boolean | null;
   profiles?: {
     full_name?: string | null;
     email?: string | null;
@@ -98,7 +99,7 @@ export default async function ProductPage({ params }: Props) {
   ]);
 
   const imageRows = (images as ProductImageRow[] | null) ?? [];
-  const reviewList = (reviews as ProductReviewRow[] | null) ?? [];
+  const reviewRows = (reviews as ProductReviewRow[] | null) ?? [];
 
   const imageUrls = [
     ...(productRow.thumbnail_url ? [productRow.thumbnail_url] : []),
@@ -107,13 +108,25 @@ export default async function ProductPage({ params }: Props) {
       .filter((url): url is string => Boolean(url)),
   ];
 
-  const reviewCount = reviewList.length;
+  const reviewCount = reviewRows.length;
   const averageRating =
     reviewCount > 0
-      ? reviewList.reduce((sum: number, item: ProductReviewRow) => {
+      ? reviewRows.reduce((sum: number, item: ProductReviewRow) => {
           return sum + Number(item.rating || 0);
         }, 0) / reviewCount
       : 4.8;
+
+  const reviewList = reviewRows.map((review) => ({
+    id: review.id,
+    rating: Number(review.rating || 0),
+    comment: review.comment || "",
+    created_at: review.created_at || "",
+    is_verified_purchase: Boolean(review.is_verified_purchase),
+    profiles: {
+      full_name: review.profiles?.full_name || "",
+      email: review.profiles?.email || "",
+    },
+  }));
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
