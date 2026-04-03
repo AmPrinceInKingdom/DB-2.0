@@ -13,9 +13,30 @@ export type ProductRow = {
   created_at: string;
 };
 
+type CreateProductInput = {
+  title: string;
+  description?: string;
+  price: number;
+  compare_price?: number | null;
+  image_url?: string;
+  category?: string;
+  seller_id: string;
+};
+
+type ProductInsertRow = {
+  title: string;
+  description: string | null;
+  price: number;
+  compare_price: number | null;
+  image_url: string | null;
+  category: string | null;
+  seller_id: string;
+  is_active: boolean;
+};
+
 export async function getProducts() {
   const { data, error } = await supabase
-    .from("products")
+    .from("products" as never)
     .select("*")
     .order("created_at", { ascending: false });
 
@@ -25,32 +46,28 @@ export async function getProducts() {
   };
 }
 
-export async function createProduct(product: {
-  title: string;
-  description?: string;
-  price: number;
-  compare_price?: number | null;
-  image_url?: string;
-  category?: string;
-  seller_id: string;
-}) {
+export async function createProduct(product: CreateProductInput) {
+  const payload: ProductInsertRow = {
+    title: product.title,
+    description: product.description ?? null,
+    price: product.price,
+    compare_price: product.compare_price ?? null,
+    image_url: product.image_url ?? null,
+    category: product.category ?? null,
+    seller_id: product.seller_id,
+    is_active: true,
+  };
+
   const { data, error } = await supabase
-    .from("products")
-    .insert({
-      title: product.title,
-      description: product.description ?? null,
-      price: product.price,
-      compare_price: product.compare_price ?? null,
-      image_url: product.image_url ?? null,
-      category: product.category ?? null,
-      seller_id: product.seller_id,
-      is_active: true,
-    })
-    .select()
+    .from("products" as never)
+    .insert([payload] as never)
+    .select("*")
     .limit(1);
 
+  const rows = data as ProductRow[] | null;
+
   return {
-    product: data?.[0] ?? null,
+    product: rows?.[0] ?? null,
     error,
   };
 }
