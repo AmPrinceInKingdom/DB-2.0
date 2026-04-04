@@ -55,4 +55,4 @@ export default function CompareBar() {
       </div>
     </div>
   );
-}s
+}
